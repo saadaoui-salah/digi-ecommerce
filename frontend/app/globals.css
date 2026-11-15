@@ -1,0 +1,523 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:where(html:has(#theme-dark:checked), html:has(#theme-dark:checked) *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-geist-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-surface-muted: var(--surface-muted);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  color-scheme: light;
+  --background: #f6f7fb;
+  --foreground: #0a1020;
+  --card: #ffffff;
+  --card-foreground: #0a1020;
+  --popover: #ffffff;
+  --popover-foreground: #0a1020;
+  --primary: #0a1020;
+  --primary-foreground: #ffffff;
+  --secondary: #eef1f8;
+  --secondary-foreground: #0a1020;
+  --muted: #eef1f8;
+  --muted-foreground: #5c657a;
+  --accent: #e9edf9;
+  --accent-foreground: #0a1020;
+  --destructive: #dc2626;
+  --border: rgba(10, 16, 32, 0.1);
+  --input: rgba(10, 16, 32, 0.14);
+  --ring: #0284c7;
+  --surface-muted: #eef1f8;
+  --grid-line: rgba(10, 16, 32, 0.06);
+  --chart-1: #0284c7;
+  --chart-2: #0891b2;
+  --chart-3: #0d9488;
+  --chart-4: #059669;
+  --chart-5: #d97706;
+  --radius: 0.75rem;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #0a1020;
+  --sidebar-primary: #0284c7;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #eef1f8;
+  --sidebar-accent-foreground: #0a1020;
+  --sidebar-border: rgba(10, 16, 32, 0.1);
+  --sidebar-ring: #0284c7;
+}
+
+html:has(#theme-dark:checked) {
+  color-scheme: dark;
+  --background: #000000;
+  --foreground: #f5f5f7;
+  --card: #0a0a0a;
+  --card-foreground: #f5f5f7;
+  --popover: #0a0a0a;
+  --popover-foreground: #f5f5f7;
+  --primary: #ffffff;
+  --primary-foreground: #000000;
+  --secondary: #141414;
+  --secondary-foreground: #f5f5f7;
+  --muted: #111111;
+  --muted-foreground: #a1a1aa;
+  --accent: #171717;
+  --accent-foreground: #ffffff;
+  --destructive: #f87171;
+  --border: rgba(255, 255, 255, 0.09);
+  --input: rgba(255, 255, 255, 0.12);
+  --ring: #38bdf8;
+  --surface-muted: #050505;
+  --grid-line: rgba(255, 255, 255, 0.05);
+  --chart-1: #38bdf8;
+  --chart-2: #22d3ee;
+  --chart-3: #2dd4bf;
+  --chart-4: #34d399;
+  --chart-5: #fbbf24;
+  --sidebar: #0a0a0a;
+  --sidebar-foreground: #f5f5f7;
+  --sidebar-primary: #38bdf8;
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: #171717;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: rgba(255, 255, 255, 0.09);
+  --sidebar-ring: #38bdf8;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    @apply scroll-smooth font-sans;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+
+  html[lang="ar"] body {
+    font-family: var(--font-arabic), var(--font-geist-sans), system-ui, sans-serif;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [role="tab"]:not([aria-disabled="true"]),
+  select:not(:disabled),
+  summary,
+  label[for] {
+    cursor: pointer;
+  }
+
+  body:has(#theme-dark:focus-visible) .theme-toggle-label {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: rgba(56, 189, 248, 0.35);
+    color: inherit;
+  }
+}
+
+.bg-grid {
+  background-image:
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+  background-size: 58px 58px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 20%, transparent 78%);
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 20%, transparent 78%);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.btn-animate {
+  transition:
+    transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    box-shadow 180ms ease,
+    opacity 180ms ease;
+}
+
+.btn-animate:hover {
+  transform: translateY(-1px);
+}
+
+.btn-animate:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.btn-animate:disabled {
+  transform: none;
+}
+
+@keyframes auth-panel {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-auth-panel {
+  animation: auth-panel 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-dropdown {
+  animation: dropdown-in 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes character-in-right {
+  from {
+    opacity: 0;
+    transform: translate3d(44px, 0, 0) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes character-in-left {
+  from {
+    opacity: 0;
+    transform: translate3d(-44px, 0, 0) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes character-out-left {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(-44px, 0, 0) scale(0.985);
+  }
+}
+
+@keyframes character-out-right {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(44px, 0, 0) scale(0.985);
+  }
+}
+
+.animate-character-in-right {
+  animation: character-in-right 560ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-character-in-left {
+  animation: character-in-left 560ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-character-out-left {
+  animation: character-out-left 560ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-character-out-right {
+  animation: character-out-right 560ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes character-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -8px, 0);
+  }
+}
+
+.animate-character-float {
+  animation: character-float 7s ease-in-out infinite;
+}
+
+@keyframes character-caption-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.animate-character-caption {
+  animation: character-caption-in 420ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.animate-accordion {
+  transition:
+    grid-template-rows 300ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 300ms ease;
+}
+
+@keyframes success-pop {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-success-pop {
+  animation: success-pop 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes toast-in {
+  from {
+    transform: translateY(12px) scale(0.97);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-toast-in {
+  animation: toast-in 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Dropdown (language switcher, period pickers) — pure CSS. The hidden
+   .dropdown-peer checkbox is toggled by its <label>, and sibling selectors
+   drive the open state, so no JavaScript is involved in showing or hiding the
+   list. */
+.dropdown-menu {
+  opacity: 0;
+  translate: 0 -6px;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 180ms ease,
+    translate 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    visibility 180ms ease;
+}
+
+.dropdown-peer:checked ~ .dropdown-menu {
+  opacity: 1;
+  translate: 0 0;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.dropdown-chevron {
+  transition: rotate 200ms ease;
+}
+
+.dropdown-peer:checked ~ .dropdown-trigger .dropdown-chevron {
+  rotate: 180deg;
+}
+
+.dropdown-peer:checked ~ .dropdown-trigger {
+  border-color: color-mix(in oklab, var(--foreground) 25%, transparent);
+}
+
+/* Sidebar drawer — the open/close state and the slide animation are pure CSS.
+   A hidden #sidebar-open checkbox (toggled by its <label>) drives everything
+   through :has(), so no JavaScript is involved in showing or hiding it. */
+.sidebar-drawer {
+  translate: -100% 0;
+  transition: translate 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+[dir="rtl"] .sidebar-drawer {
+  translate: 100% 0;
+}
+
+:root:has(#sidebar-open:checked) .sidebar-drawer {
+  translate: 0 0;
+}
+
+.sidebar-backdrop {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 300ms ease;
+}
+
+:root:has(#sidebar-open:checked) .sidebar-backdrop {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.sidebar-menu-icon,
+.sidebar-close-icon {
+  transition: rotate 200ms ease;
+}
+
+:root:has(#sidebar-open:checked) .sidebar-menu-icon,
+:root:has(#sidebar-open:checked) .sidebar-close-icon {
+  rotate: 90deg;
+}
+
+/* Search dropdown (package group / package picker) — the open state comes from
+   the hidden .search-peer checkbox, so the list is shown and animated by CSS
+   alone. JavaScript only filters the list and unchecks the box on pick. */
+.search-menu {
+  opacity: 0;
+  translate: 0 -6px;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 180ms ease,
+    translate 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    visibility 180ms ease;
+}
+
+.search-peer:checked ~ .search-menu {
+  opacity: 1;
+  translate: 0 0;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.search-chevron {
+  transition: rotate 200ms ease;
+}
+
+.search-peer:checked ~ .search-trigger .search-chevron {
+  rotate: 180deg;
+}
+
+.search-peer:checked ~ .search-trigger {
+  border-color: color-mix(in oklab, var(--foreground) 25%, transparent);
+}
+
+/* Notification dropdown — the open state comes from the hidden
+   .notification-peer checkbox, so the panel is shown and hidden by CSS alone.
+   JavaScript only marks the notifications as read and unchecks the box when
+   the click lands outside of the panel. */
+.notification-menu {
+  opacity: 0;
+  translate: 0 -6px;
+  scale: 0.98;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 180ms ease,
+    translate 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    scale 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    visibility 180ms ease;
+}
+
+.notification-peer:checked ~ .notification-menu {
+  opacity: 1;
+  translate: 0 0;
+  scale: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-animate,
+  .animate-auth-panel,
+  .animate-dropdown,
+  .animate-character-in-right,
+  .animate-character-in-left,
+  .animate-character-out-right,
+  .animate-character-out-left,
+  .animate-character-float,
+  .animate-character-caption,
+  .animate-accordion,
+  .sidebar-drawer,
+  .sidebar-backdrop,
+  .sidebar-menu-icon,
+  .sidebar-close-icon,
+  .dropdown-menu,
+  .dropdown-chevron,
+  .search-menu,
+  .search-chevron,
+  .notification-menu,
+  .animate-success-pop,
+  .animate-toast-in {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+
+  .animate-character-out-right,
+  .animate-character-out-left {
+    opacity: 0 !important;
+  }
+}

@@ -1,0 +1,33 @@
+{% extends "admin/base.html" %}
+{% load unfold %}
+
+{% block content %}
+    <div class="flex flex-col gap-6">
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {% component "unfold/components/card.html" with title="Customers" title_icon="group" %}
+                <p class="text-2xl font-semibold text-important">{{ stats.customers }}</p>
+            {% endcomponent %}
+
+            {% component "unfold/components/card.html" with title="Categories" title_icon="category" %}
+                <p class="text-2xl font-semibold text-important">{{ stats.categories }}</p>
+            {% endcomponent %}
+
+            {% component "unfold/components/card.html" with title="Products" title_icon="inventory_2" %}
+                <p class="text-2xl font-semibold text-important">{{ stats.products }}</p>
+            {% endcomponent %}
+
+            {% component "unfold/components/card.html" with title="Packages" title_icon="package_2" %}
+                <p class="text-2xl font-semibold text-important">{{ stats.packages }}</p>
+            {% endcomponent %}
+        </div>
+
+        {% component "unfold/components/card.html" with title="Analytics" title_icon="insights" description="What the shop sold, how much it earned and what the customers made by reselling." %}
+            <a href="{% url 'admin:analytics' %}"
+               class="bg-primary-600 inline-flex items-center gap-2 rounded-default px-4 py-2 text-sm font-medium text-white">
+                Open the analytics
+            </a>
+        {% endcomponent %}
+
+        {% include "unfold/helpers/app_list_default.html" with show_changelinks=True %}
+    </div>
+{% endblock %}

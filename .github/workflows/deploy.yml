@@ -1,0 +1,65 @@
+name: Deploy
+
+# The deploy waits for the tests: it only runs when the Tests workflow of the
+# same branch finished green. Nothing reaches the server before the tests
+# passed.
+on:
+  workflow_run:
+    workflows: ["Tests"]
+    branches: [main, staging]
+    types: [completed]
+
+jobs:
+  deploy:
+    name: Deploy to ${{ github.event.workflow_run.head_branch }}
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+
+    # The environment holds the secrets of the branch: staging and main can
+    # point at different servers.
+    environment: ${{ github.event.workflow_run.head_branch }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Deploy the backend
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            cd ${{ secrets.SSH_PATH }}
+            git fetch --all
+            git reset --hard ${{ github.event.workflow_run.head_sha }}
+            .venv/bin/pip install --upgrade pip
+            .venv/bin/pip install -r requirements.txt
+            .venv/bin/python manage.py migrate --noinput
+            .venv/bin/python manage.py collectstatic --noinput
+            sudo systemctl restart digi
+
+      - name: Build the frontend
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            cd ${{ secrets.SSH_PATH }}/frontend
+            git fetch --all
+            git reset --hard ${{ github.event.workflow_run.head_sha }}
+            npm ci
+            npm run build
+
+      - name: Restart the frontend
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: sudo systemctl restart digi-frontend

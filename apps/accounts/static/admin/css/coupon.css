@@ -1,0 +1,11 @@
+/* The coupon form: the figure the staff did not type is filled in for them. */
+
+#id_percentage,
+#id_discount_price {
+    max-width: 12rem;
+}
+
+/* The figure that was filled in for them. */
+#id_discount_price[readonly="readonly"] {
+    opacity: 0.75;
+}

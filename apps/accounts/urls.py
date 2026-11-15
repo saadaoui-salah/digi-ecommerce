@@ -1,0 +1,57 @@
+from django.urls import path
+
+from .views import (
+    ChangePasswordView,
+    CookieRefreshView,
+    CreditListView,
+    LoginView,
+    LogoutView,
+    MeView,
+    NotificationListView,
+    OrderListCreateView,
+    OrderReportListCreateView,
+    OrderSoldView,
+    OrderStatusView,
+    OrderSummaryView,
+    OrderTakeView,
+    RegisterView,
+    ReferralProgramView,
+    RegionListView,
+    TransactionListCreateView,
+    TransactionSummaryView,
+    UserApprovalView,
+)
+
+urlpatterns = [
+    path("register/", RegisterView.as_view(), name="register"),
+    path("token/", LoginView.as_view(), name="token_obtain_pair"),
+    path("token/refresh/", CookieRefreshView.as_view(), name="token_refresh"),
+    path("logout/", LogoutView.as_view(), name="logout"),
+    path("me/", MeView.as_view(), name="me"),
+    path("change-password/", ChangePasswordView.as_view(), name="change_password"),
+    path("orders/", OrderListCreateView.as_view(), name="order-list"),
+    path("orders/summary/", OrderSummaryView.as_view(), name="order-summary"),
+    path("orders/<int:pk>/sold/", OrderSoldView.as_view(), name="order-sold"),
+    path("orders/<int:pk>/take/", OrderTakeView.as_view(), name="order-take"),
+    path(
+        "orders/<int:pk>/status/",
+        OrderStatusView.as_view(),
+        name="order-status",
+    ),
+    path(
+        "orders/<int:order_id>/reports/",
+        OrderReportListCreateView.as_view(),
+        name="order-reports",
+    ),
+    path("notifications/", NotificationListView.as_view(), name="notification-list"),
+    path("credits/", CreditListView.as_view(), name="credit-list"),
+    path("regions/", RegionListView.as_view(), name="region-list"),
+    path("referrals/", ReferralProgramView.as_view(), name="referral-program"),
+    path("transactions/", TransactionListCreateView.as_view(), name="transaction-list"),
+    path(
+        "transactions/summary/",
+        TransactionSummaryView.as_view(),
+        name="transaction-summary",
+    ),
+    path("users/<int:pk>/approval/", UserApprovalView.as_view(), name="user-approval"),
+]

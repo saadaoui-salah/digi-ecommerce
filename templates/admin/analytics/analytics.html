@@ -1,0 +1,204 @@
+{% extends "admin/base.html" %}
+{% load unfold %}
+
+{% block content %}
+    <div class="flex flex-col gap-6">
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {% component "unfold/components/card.html" with title="Net profit" title_icon="trending_up" %}
+                <p class="text-2xl font-semibold text-important">{{ cards.net_profit }}</p>
+            {% endcomponent %}
+
+            {% component "unfold/components/card.html" with title="Total revenue" title_icon="payments" %}
+                <p class="text-2xl font-semibold text-important">{{ cards.total_revenue }}</p>
+            {% endcomponent %}
+
+            {% component "unfold/components/card.html" with title="Net profit %" title_icon="percent" description="The net profit over the price of the packages sold." %}
+                <p class="text-2xl font-semibold text-important">{{ cards.net_profit_percentage }}</p>
+            {% endcomponent %}
+
+            {% component "unfold/components/card.html" with title="Orders" title_icon="shopping_bag" %}
+                <p class="text-2xl font-semibold text-important">{{ cards.orders_count }}</p>
+            {% endcomponent %}
+
+            {% component "unfold/components/card.html" with title="Pending on demand" title_icon="hourglass_top" %}
+                <p class="text-2xl font-semibold text-important">{{ cards.pending_demand_orders }}</p>
+            {% endcomponent %}
+
+            {% component "unfold/components/card.html" with title="Stock not sold" title_icon="inventory" description="The worth of the instant codes that are still waiting to be sold." %}
+                <p class="text-2xl font-semibold text-important">{{ cards.stock_worth }}</p>
+            {% endcomponent %}
+
+            {% component "unfold/components/card.html" with title="Codes in stock" title_icon="qr_code_2" description="How many instant codes are still waiting to be sold." %}
+                <p class="text-2xl font-semibold text-important">{{ cards.stock_quantity }}</p>
+            {% endcomponent %}
+
+            {% component "unfold/components/card.html" with title="Benefits" title_icon="volunteer_activism" description="What the customers earned by reselling." %}
+                <p class="text-2xl font-semibold text-important">{{ cards.total_benefit }}</p>
+            {% endcomponent %}
+        </div>
+
+        <!-- The period of the charts -->
+        <div class="flex flex-wrap items-center gap-2">
+            {% for item in periods %}
+                <a href="?period={{ item.key }}"
+                   class="border border-base-200 dark:border-base-700 rounded-default px-3 py-1.5 text-sm {% if item.active %}bg-primary-600 text-white{% else %}text-subtle{% endif %}">
+                    {{ item.label }}
+                </a>
+            {% endfor %}
+
+            <!-- The daily period is narrowed down to one month, the monthly
+                 period to one year. -->
+            {% if period_key == "day" and months %}
+                <select name="month"
+                        onchange="window.location.search = '?period=day&amp;month=' + this.value"
+                        class="border border-base-200 dark:border-base-700 rounded-default bg-base-50 dark:bg-base-800 px-3 py-1.5 text-sm text-important">
+                    {% for value in months %}
+                        <option value="{{ value }}" {% if value == month %}selected{% endif %}>{{ value }}</option>
+                    {% endfor %}
+                </select>
+            {% endif %}
+
+            {% if period_key == "month" and years %}
+                <select name="year"
+                        onchange="window.location.search = '?period=month&amp;year=' + this.value"
+                        class="border border-base-200 dark:border-base-700 rounded-default bg-base-50 dark:bg-base-800 px-3 py-1.5 text-sm text-important">
+                    {% for value in years %}
+                        <option value="{{ value }}" {% if value == year %}selected{% endif %}>{{ value }}</option>
+                    {% endfor %}
+                </select>
+            {% endif %}
+        </div>
+
+        <!-- Bought products by count -->
+        {% component "unfold/components/card.html" with title="Bought products by count" description="The products that sold the most in this period." %}
+            {% if charts.products.bars %}
+                <ul class="flex flex-col gap-3">
+                    {% for bar in charts.products.bars %}
+                        <li>
+                            <div class="flex items-center justify-between gap-3 text-xs">
+                                <span class="truncate font-medium text-important">{{ bar.label }}</span>
+                                <span class="shrink-0 text-subtle">{{ bar.value }}</span>
+                            </div>
+                            <div class="bg-base-200 dark:bg-base-800 h-2 mt-2 overflow-hidden rounded-default w-full">
+                                <div class="bg-primary-600 h-2 rounded-default"
+                                     style="width: {{ bar.width }}%"></div>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="py-8 text-center text-sm text-subtle">No sales yet.</p>
+            {% endif %}
+        {% endcomponent %}
+
+        <!-- How much the customers of every region owe the shop -->
+        {% component "unfold/components/card.html" with title="Owed by region" description="What the free-spend customers of every region still owe the shop." %}
+            {% if charts.debts.bars %}
+                <ul class="flex flex-col gap-3">
+                    {% for bar in charts.debts.bars %}
+                        <li>
+                            <div class="flex items-center justify-between gap-3 text-xs">
+                                <span class="truncate font-medium text-important">{{ bar.label }}</span>
+                                <span class="shrink-0 text-subtle">{{ bar.value }} DA</span>
+                            </div>
+                            <div class="bg-base-200 dark:bg-base-800 h-2 mt-2 overflow-hidden rounded-default w-full">
+                                <div class="bg-primary-600 h-2 rounded-default"
+                                     style="width: {{ bar.width }}%"></div>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="py-8 text-center text-sm text-subtle">Nobody owes anything.</p>
+            {% endif %}
+        {% endcomponent %}
+
+        <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
+            <!-- Spend over time -->
+            {% component "unfold/components/card.html" with title="Spend over time" description="What the customers paid in this period." %}
+                {% if charts.spend.points %}
+                    <svg viewBox="0 0 {{ charts.spend.width }} {{ charts.spend.height }}"
+                         class="w-full" style="height:auto;overflow:visible" role="img">
+                        <defs>
+                            <linearGradient id="admin-spend-area" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="var(--color-primary-600)" stop-opacity="0.35" />
+                                <stop offset="100%" stop-color="var(--color-primary-600)" stop-opacity="0" />
+                            </linearGradient>
+                        </defs>
+
+                        {% for line in charts.spend.grid %}
+                            <line x1="{{ charts.spend.padding_left }}"
+                                  x2="{{ charts.spend.width }}"
+                                  y1="{{ line.y }}" y2="{{ line.y }}"
+                                  stroke="var(--color-base-300)" stroke-width="1" stroke-dasharray="3 4" />
+                            <text x="{{ charts.spend.padding_left|add:"-8" }}" y="{{ line.y }}"
+                                  text-anchor="end" font-size="9"
+                                  fill="var(--color-base-500)">{{ line.label }}</text>
+                        {% endfor %}
+
+                        <path d="{{ charts.spend.area }}" fill="url(#admin-spend-area)" />
+                        <path d="{{ charts.spend.line }}" fill="none"
+                              stroke="var(--color-primary-600)"
+                              stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+
+                        {% for point in charts.spend.points %}
+                            <circle cx="{{ point.x }}" cy="{{ point.y }}" r="3"
+                                    fill="var(--color-primary-600)" stroke="var(--color-white)" stroke-width="2" />
+                        {% endfor %}
+
+                        {% for label in charts.spend.labels %}
+                            <text x="{{ label.x }}" y="{{ charts.spend.height }}"
+                                  text-anchor="{{ label.anchor|default:"middle" }}" font-size="9"
+                                  fill="var(--color-base-500)">{{ label.label }}</text>
+                        {% endfor %}
+                    </svg>
+                {% else %}
+                    <p class="py-8 text-center text-sm text-subtle">No sales yet.</p>
+                {% endif %}
+            {% endcomponent %}
+
+            <!-- Benefits over time -->
+            {% component "unfold/components/card.html" with title="Benefits over time" description="What the customers earned by reselling: the resale price minus what they paid." %}
+                {% if charts.benefits.points %}
+                    <svg viewBox="0 0 {{ charts.benefits.width }} {{ charts.benefits.height }}"
+                         class="w-full" style="height:auto;overflow:visible" role="img">
+                        <defs>
+                            <linearGradient id="admin-benefit-area" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="var(--color-green-500)" stop-opacity="0.35" />
+                                <stop offset="100%" stop-color="var(--color-green-500)" stop-opacity="0" />
+                            </linearGradient>
+                        </defs>
+
+                        {% for line in charts.benefits.grid %}
+                            <line x1="{{ charts.benefits.padding_left }}"
+                                  x2="{{ charts.benefits.width }}"
+                                  y1="{{ line.y }}" y2="{{ line.y }}"
+                                  stroke="var(--color-base-300)" stroke-width="1" stroke-dasharray="3 4" />
+                            <text x="{{ charts.benefits.padding_left|add:"-8" }}" y="{{ line.y }}"
+                                  text-anchor="end" font-size="9"
+                                  fill="var(--color-base-500)">{{ line.label }}</text>
+                        {% endfor %}
+
+                        <path d="{{ charts.benefits.area }}" fill="url(#admin-benefit-area)" />
+                        <path d="{{ charts.benefits.line }}" fill="none"
+                              stroke="var(--color-green-500)"
+                              stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+
+                        {% for point in charts.benefits.points %}
+                            <circle cx="{{ point.x }}" cy="{{ point.y }}" r="3"
+                                    fill="var(--color-green-500)" stroke="var(--color-white)" stroke-width="2" />
+                        {% endfor %}
+
+                        {% for label in charts.benefits.labels %}
+                            <text x="{{ label.x }}" y="{{ charts.benefits.height }}"
+                                  text-anchor="{{ label.anchor|default:"middle" }}" font-size="9"
+                                  fill="var(--color-base-500)">{{ label.label }}</text>
+                        {% endfor %}
+                    </svg>
+                {% else %}
+                    <p class="py-8 text-center text-sm text-subtle">No resales yet.</p>
+                {% endif %}
+            {% endcomponent %}
+        </div>
+    </div>
+{% endblock %}

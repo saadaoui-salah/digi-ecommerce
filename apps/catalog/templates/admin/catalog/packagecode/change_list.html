@@ -1,0 +1,38 @@
+{% extends "admin/change_list.html" %}
+{% load i18n static %}
+
+{% block extrahead %}
+  {{ block.super }}
+  <style>
+    /* The copy button shows a tick once the value is on the clipboard. */
+    .copy-btn .check-icon {
+      display: none;
+    }
+
+    .copy-btn[data-copied] .copy-icon {
+      display: none;
+    }
+
+    .copy-btn[data-copied] .check-icon {
+      display: block;
+    }
+  </style>
+  <script>
+    document.addEventListener("click", function (event) {
+      var button = event.target.closest("[data-copy-code]");
+      if (!button) return;
+      var text = button.getAttribute("data-copy-code") || "";
+
+      function done() {
+        button.dataset.copied = "true";
+        setTimeout(function () {
+          delete button.dataset.copied;
+        }, 1500);
+      }
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, function () {});
+      }
+    });
+  </script>
+{% endblock %}

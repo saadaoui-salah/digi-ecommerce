@@ -1,0 +1,22 @@
+.venv/
+__pycache__/
+*.py[cod]
+.env
+db.sqlite3
+media/
+staticfiles/
+schema.yml
+
+# Frontend
+node_modules/
+.next/
+out/
+tsconfig.tsbuildinfo
+next-env.d.ts
+*.tsbuildinfo
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

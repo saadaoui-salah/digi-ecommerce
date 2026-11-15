@@ -1,0 +1,108 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+<div id="content-main">
+  <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h1 class="text-xl font-semibold text-foreground">{% trans "On-demand orders" %}</h1>
+      <p class="mt-1 text-sm text-muted-foreground">
+        {% trans "Take an order to start working on it. Every status change notifies the customer." %}
+      </p>
+    </div>
+    <a
+      href="{% url 'admin:accounts_order_changelist' %}"
+      class="inline-flex h-9 items-center rounded-lg border border-border px-3 text-sm font-medium"
+    >
+      {% trans "All orders" %}
+    </a>
+  </div>
+
+  {% if not orders %}
+    <div class="rounded-xl border border-dashed border-border px-5 py-12 text-center text-sm text-muted-foreground">
+      {% trans "No on-demand orders are waiting." %}
+    </div>
+  {% endif %}
+
+  <div class="space-y-4">
+    {% for order in orders %}
+      <div class="rounded-xl border border-border bg-card p-5">
+        <div class="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p class="text-sm font-semibold text-foreground">
+              #{{ order.pk }} — {{ order.product_name }}
+              {% if order.group_name %}
+                <span class="font-normal text-muted-foreground">· {{ order.group_name }} · {{ order.package_name }}</span>
+              {% else %}
+                <span class="font-normal text-muted-foreground">· {{ order.package_name }}</span>
+              {% endif %}
+            </p>
+            <p class="mt-1 text-xs text-muted-foreground">
+              {{ order.user.email }} · {{ order.price }} DA · {{ order.created_at|date:"Y-m-d H:i" }}
+              {% if order.assigned_to %}
+                · {% blocktrans with name=order.assigned_to %}Handled by {{ name }}{% endblocktrans %}
+              {% endif %}
+            </p>
+          </div>
+          <span class="rounded-md bg-surface-muted px-2.5 py-1 text-xs font-medium text-foreground">
+            {{ order.get_status_display }}
+          </span>
+        </div>
+
+        <form method="post" class="mt-4 flex flex-wrap items-end gap-3 border-t border-border pt-4">
+          {% csrf_token %}
+          <input type="hidden" name="order_id" value="{{ order.pk }}" />
+
+          {% if not order.assigned_to %}
+            <button
+              type="submit"
+              name="action"
+              value="take"
+              class="inline-flex h-9 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground"
+            >
+              {% trans "Take this order" %}
+            </button>
+          {% endif %}
+
+          <label class="flex flex-col gap-1 text-xs text-muted-foreground">
+            {% trans "Status" %}
+            <select name="status" class="h-9 rounded-lg border border-border bg-background px-2 text-sm text-foreground">
+              {% for value, label in statuses %}
+                <option value="{{ value }}" {% if value == order.status %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </label>
+
+          <label class="flex flex-col gap-1 text-xs text-muted-foreground">
+            {% trans "Report title" %}
+            <input
+              type="text"
+              name="report_title"
+              placeholder="{% trans 'Only needed for a problem' %}"
+              class="h-9 rounded-lg border border-border bg-background px-2 text-sm text-foreground"
+            />
+          </label>
+
+          <label class="flex min-w-64 flex-1 flex-col gap-1 text-xs text-muted-foreground">
+            {% trans "Report details" %}
+            <input
+              type="text"
+              name="report_details"
+              class="h-9 rounded-lg border border-border bg-background px-2 text-sm text-foreground"
+            />
+          </label>
+
+          <button
+            type="submit"
+            name="action"
+            value="status"
+            class="inline-flex h-9 items-center rounded-lg border border-border px-4 text-sm font-medium text-foreground"
+          >
+            {% trans "Update status" %}
+          </button>
+        </form>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
