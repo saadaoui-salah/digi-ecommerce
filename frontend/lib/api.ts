@@ -233,22 +233,11 @@ export type Daira = {
   id: number;
   name: string;
   wilaya: number;
-  is_active: boolean;
 };
 
 export type Wilaya = {
   id: number;
   name: string;
-  region: number;
-  is_active: boolean;
-  dairas: Daira[];
-};
-
-export type Region = {
-  id: number;
-  name: string;
-  is_active: boolean;
-  wilayas: Wilaya[];
 };
 
 export type Coupon = {

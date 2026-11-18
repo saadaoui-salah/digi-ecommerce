@@ -1867,7 +1867,7 @@ class ReferralTests(APITestCase):
 
 
 class RegionTests(APITestCase):
-    """The regions, the wilayas and the dairas."""
+    """The public wilaya and daira pickers; regions stay admin-only."""
 
     def setUp(self):
         self.region = Region.objects.create(name="Centre")
@@ -1890,15 +1890,29 @@ class RegionTests(APITestCase):
         payload.update(extra)
         return self.client.post("/api/auth/register/", payload, format="json")
 
-    def test_the_regions_travel_with_their_wilayas_and_dairas(self):
-        response = self.client.get("/api/auth/regions/")
+    def test_the_public_api_lists_wilayas_without_regions(self):
+        response = self.client.get("/api/auth/wilayas/")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data[0]["name"], "Centre")
-        wilayas = response.data[0]["wilayas"]
-        self.assertEqual(len(wilayas), 2)
-        names = [daira["name"] for daira in wilayas[0]["dairas"]]
+        names = [wilaya["name"] for wilaya in response.data]
+        self.assertIn("Alger", names)
+        self.assertIn("Blida", names)
+        self.assertNotIn("region", response.data[0])
+        self.assertNotIn("dairas", response.data[0])
+
+    def test_the_dairas_are_fetched_for_one_wilaya(self):
+        response = self.client.get(
+            f"/api/auth/dairas/?wilaya={self.wilaya.id}"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        names = [daira["name"] for daira in response.data]
         self.assertIn("Bab El Oued", names)
+        self.assertNotIn("Blida", names)
+
+    def test_the_daira_endpoint_requires_a_wilaya(self):
+        response = self.client.get("/api/auth/dairas/")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_an_account_can_pick_a_wilaya_and_a_daira(self):
         response = self._register(

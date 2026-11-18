@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -21,9 +21,10 @@ import { Logo } from "@/components/logo";
 import { SuccessCheck } from "@/components/success-check";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useToast } from "@/components/toast";
+import { useSession } from "@/components/use-session";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ApiError, api, type Region, type User } from "@/lib/api";
+import { ApiError, api, type Daira, type Wilaya } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { captureReferralCode, readReferralCode } from "@/lib/referral";
 
@@ -126,6 +127,7 @@ export default function AuthPage() {
   const [status, setStatus] = useState<FormStatus>("idle");
   const [error, setError] = useState<AuthError | null>(null);
   const { notify } = useToast();
+  const { user, checkingSession, refresh } = useSession();
 
   const [login, setLogin] = useState({ email: "", password: "" });
   const [signup, setSignup] = useState({
@@ -138,18 +140,20 @@ export default function AuthPage() {
     wilaya: "",
     daira: "",
   });
-  const [regions, setRegions] = useState<Region[]>([]);
+  const [wilayas, setWilayas] = useState<Wilaya[]>([]);
+  const [dairas, setDairas] = useState<Daira[]>([]);
+  const [loadingDairas, setLoadingDairas] = useState(false);
 
-  // The regions of the country, and the referral of the visitor.
+  // The wilayas are public; regions are admin-only and never fetched here.
   useEffect(() => {
     let cancelled = false;
 
-    api<Region[]>("/auth/regions/")
+    api<Wilaya[]>("/auth/wilayas/")
       .then((data) => {
-        if (!cancelled) setRegions(data);
+        if (!cancelled) setWilayas(data);
       })
       .catch(() => {
-        // The form still works without the regions.
+        // The form still works without the list.
       });
 
     // The referral is kept in a cookie, so a reload does not lose it.
@@ -160,34 +164,32 @@ export default function AuthPage() {
     };
   }, []);
 
-  // The dairas of the chosen wilaya.
-  const dairas = useMemo(() => {
-    if (!signup.wilaya) return [];
-
-    for (const region of regions) {
-      for (const wilaya of region.wilayas) {
-        if (String(wilaya.id) === signup.wilaya) return wilaya.dairas;
-      }
-    }
-
-    return [];
-  }, [regions, signup.wilaya]);
-
+  // Fetch the dairas only after a wilaya has been picked.
   useEffect(() => {
     let cancelled = false;
 
-    api<User>("/auth/me/")
-      .then(() => {
-        if (!cancelled) router.replace("/");
+    if (!signup.wilaya) return;
+
+    api<Daira[]>(`/auth/dairas/?wilaya=${signup.wilaya}`)
+      .then((data) => {
+        if (!cancelled) setDairas(data);
       })
       .catch(() => {
-        // Not signed in — the forms are ready.
+        if (!cancelled) setDairas([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingDairas(false);
       });
 
     return () => {
       cancelled = true;
     };
-  }, [router]);
+  }, [signup.wilaya]);
+
+  // The shared session already fetched /me/ once on page load.
+  useEffect(() => {
+    if (user && !checkingSession) router.replace("/");
+  }, [user, checkingSession, router]);
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -211,6 +213,7 @@ export default function AuthPage() {
         method: "POST",
         body: JSON.stringify({ email, password: login.password }),
       });
+      await refresh();
       setStatus("done");
       notify(t("auth.signedInToast"));
       setTimeout(() => router.replace("/"), 700);
@@ -281,6 +284,7 @@ export default function AuthPage() {
           ...(referral ? { referral_code: referral } : {}),
         }),
       });
+      await refresh();
       setStatus("done");
       notify(t("auth.accountCreatedToast"));
       setTimeout(() => router.replace("/"), 700);
@@ -571,24 +575,19 @@ export default function AuthPage() {
                       name="wilaya"
                       autoComplete="address-level1"
                       value={signup.wilaya}
-                      onChange={(event) =>
-                        setSignup({
-                          ...signup,
-                          wilaya: event.target.value,
-                          daira: "",
-                        })
-                      }
+                      onChange={(event) => {
+                        const wilaya = event.target.value;
+                        setSignup({ ...signup, wilaya, daira: "" });
+                        setDairas([]);
+                        setLoadingDairas(Boolean(wilaya));
+                      }}
                       className="h-11 w-full rounded-lg border border-border bg-card px-3 text-sm text-foreground outline-none focus:border-sky-500"
                     >
                       <option value="">{t("auth.chooseWilaya")}</option>
-                      {regions.map((region) => (
-                        <optgroup key={region.id} label={region.name}>
-                          {region.wilayas.map((wilaya) => (
-                            <option key={wilaya.id} value={String(wilaya.id)}>
-                              {wilaya.name}
-                            </option>
-                          ))}
-                        </optgroup>
+                      {wilayas.map((wilaya) => (
+                        <option key={wilaya.id} value={String(wilaya.id)}>
+                          {wilaya.name}
+                        </option>
                       ))}
                     </select>
                   </label>
@@ -605,10 +604,12 @@ export default function AuthPage() {
                       onChange={(event) =>
                         setSignup({ ...signup, daira: event.target.value })
                       }
-                      disabled={!signup.wilaya}
+                      disabled={!signup.wilaya || loadingDairas}
                       className="h-11 w-full rounded-lg border border-border bg-card px-3 text-sm text-foreground outline-none focus:border-sky-500 disabled:opacity-55"
                     >
-                      <option value="">{t("auth.chooseDaira")}</option>
+                      <option value="">
+                        {loadingDairas ? t("common.loading") : t("auth.chooseDaira")}
+                      </option>
                       {dairas.map((daira) => (
                         <option key={daira.id} value={String(daira.id)}>
                           {daira.name}

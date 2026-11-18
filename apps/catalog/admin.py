@@ -291,6 +291,7 @@ class PackageAdmin(ModelAdmin):
         "total_revenue",
         "net_profit",
         "total_benefit",
+        "margin_display",
     )
     fieldsets = (
         (

@@ -14,7 +14,6 @@ from .models import (
     Order,
     OrderReport,
     Referral,
-    Region,
     Transaction,
     User,
     Wilaya,
@@ -28,20 +27,12 @@ class DairaSerializer(serializers.ModelSerializer):
         fields = ("id", "name", "wilaya", "is_active")
 
 
-class WilayaSerializer(serializers.ModelSerializer):
-    dairas = DairaSerializer(many=True, read_only=True)
+class WilayaOptionSerializer(serializers.ModelSerializer):
+    """Public wilaya option — regions stay an admin-only concept."""
 
     class Meta:
         model = Wilaya
-        fields = ("id", "name", "region", "is_active", "dairas")
-
-
-class RegionSerializer(serializers.ModelSerializer):
-    wilayas = WilayaSerializer(many=True, read_only=True)
-
-    class Meta:
-        model = Region
-        fields = ("id", "name", "is_active", "wilayas")
+        fields = ("id", "name")
 
 
 class RegisterSerializer(serializers.ModelSerializer):

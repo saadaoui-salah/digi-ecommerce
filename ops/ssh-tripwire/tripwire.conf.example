@@ -1,0 +1,24 @@
+# Everything is off until you set dry_run=false.
+[main]
+log_file = /var/log/ssh-tripwire.log
+auth_log = /var/log/auth.log
+dry_run = true
+
+# In YOUR public IPs, one per line. CIDR works too (203.0.113.0/24).
+[allowlist]
+allowed_ips =
+# The SHA256 fingerprint of YOUR key: ssh-keygen -lf ~/.ssh/id_ed25519.pub
+allowed_fingerprints =
+
+# The code that gets deleted. Give the full path of the app directory.
+# Never put /, /etc, /var, /home or a one-level path here.
+[targets]
+code_paths =
+# Docker Compose project names of the app (docker compose ps to find them).
+compose_projects =
+# Drop ALL Docker images after the wipe? Set false to keep base images.
+docker_images = true
+# The database. These paths are checked before and after the wipe and are
+# never deleted. If your DB is a Docker volume, put the volume's directory
+# here, e.g. /var/lib/docker/volumes/digi_db/_data
+protected_paths =

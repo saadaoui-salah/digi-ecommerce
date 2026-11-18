@@ -1,0 +1,3 @@
+selenium>=4.27
+pytest>=8.0
+requests>=2.32

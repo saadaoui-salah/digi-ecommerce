@@ -1,0 +1,20 @@
+[Unit]
+Description=SSH / SCP authentication tripwire
+After=network.target docker.service
+Wants=docker.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /opt/ssh-tripwire/tripwire.py --config /etc/ssh-tripwire.conf
+Restart=always
+RestartSec=5
+# The service runs as root: it has to be able to read auth.log and remove the
+# app directory. Keep the script and the config root-owned and not writable by
+# anyone else.
+User=root
+ProtectSystem=off
+ProtectHome=off
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=multi-user.target
