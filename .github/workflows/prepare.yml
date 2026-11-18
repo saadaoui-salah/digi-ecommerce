@@ -1,8 +1,8 @@
 name: prepare
 
 # Verifies that Docker and PostgreSQL are available on the VPS and installs
-# either of them if missing. Safe to re-run: services already present are left
-# untouched.
+# either of them if missing. Creates separate databases for main and staging.
+# Safe to re-run: existing services, roles and databases are left untouched.
 
 on:
   workflow_dispatch:
@@ -10,12 +10,12 @@ on:
     - cron: "17 3 * * 1" # every Monday at 03:17 UTC
 
 jobs:
-  ensure-stack:
-    name: Ensure Docker + PostgreSQL on VPS
+  prepare:
+    name: Prepare VPS
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check and install missing services
+      - name: Check, install and configure the VPS
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -53,22 +53,32 @@ jobs:
               apt-get update -qq
               apt-get install -y -qq postgresql postgresql-contrib
               systemctl enable --now postgresql
-
               PGVER="$(ls /etc/postgresql | head -1)"
-              DB_NAME="django_db"
-              DB_USER="django_user"
-              DB_PASS="$(openssl rand -base64 32 | tr -d '/+=' | cut -c1-32)"
-              printf '%s\n' "DB_NAME=$DB_NAME" "DB_USER=$DB_USER" "DB_PASSWORD=$DB_PASS" "DB_HOST=127.0.0.1" "DB_PORT=5432" > /root/.django_pg.env
-              chmod 600 /root/.django_pg.env
-              printf '%s\n' "CREATE USER $DB_USER WITH PASSWORD '$DB_PASS';" "CREATE DATABASE $DB_NAME OWNER $DB_USER;" "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;" > /tmp/django_pg_init.sql
-              runuser -u postgres -- psql -v ON_ERROR_STOP=1 -f /tmp/django_pg_init.sql
-              rm -f /tmp/django_pg_init.sql
-
               sed -i "s/^#\?listen_addresses.*/listen_addresses = '*'/" "/etc/postgresql/$PGVER/main/postgresql.conf"
               printf '%s\n' "" "# Django / remote access" "host    all             all             127.0.0.1/32            scram-sha-256" "host    all             all             ::1/128                 scram-sha-256" "host    all             all             0.0.0.0/0               scram-sha-256" "host    all             all             ::/0                    scram-sha-256" >> "/etc/postgresql/$PGVER/main/pg_hba.conf"
               systemctl restart postgresql
-              echo "PostgreSQL installed and configured."
+              echo "PostgreSQL installed."
             fi
+
+            echo "=== Databases ==="
+            ensure_db() {
+              DB_NAME="$1"
+              DB_USER="$2"
+              ENV_FILE="$3"
+              if [ -f "$ENV_FILE" ]; then
+                echo "$DB_NAME credentials already exist at $ENV_FILE"
+                return
+              fi
+              DB_PASS="$(openssl rand -base64 32 | tr -d '/+=' | cut -c1-32)"
+              printf '%s\n' "DB_NAME=$DB_NAME" "DB_USER=$DB_USER" "DB_PASSWORD=$DB_PASS" "DB_HOST=127.0.0.1" "DB_PORT=5432" > "$ENV_FILE"
+              chmod 600 "$ENV_FILE"
+              printf '%s\n' "CREATE USER $DB_USER WITH PASSWORD '$DB_PASS';" "CREATE DATABASE $DB_NAME OWNER $DB_USER;" "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;" > /tmp/django_pg_init.sql
+              runuser -u postgres -- psql -v ON_ERROR_STOP=1 -f /tmp/django_pg_init.sql
+              rm -f /tmp/django_pg_init.sql
+              echo "Created $DB_NAME owned by $DB_USER"
+            }
+            ensure_db django_db django_user /root/.django_pg.env
+            ensure_db django_staging_db django_staging_user /root/.django_pg_staging.env
 
             echo "=== Verification ==="
             systemctl is-active docker
@@ -78,5 +88,5 @@ jobs:
             docker info --format 'Docker server: {{.ServerVersion}}'
             docker compose version
             pg_isready -h 127.0.0.1 -p 5432
-            runuser -u postgres -- psql -Atc 'SELECT current_database()' postgres
-            echo "=== Stack check complete ==="
+            runuser -u postgres -- psql -Atc 'SELECT datname FROM pg_database WHERE datname LIKE '\''django%'\''' postgres
+            echo "=== Prepare complete ==="

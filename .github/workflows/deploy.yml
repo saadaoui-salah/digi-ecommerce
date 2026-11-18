@@ -2,9 +2,8 @@ name: deploy
 
 # Branch lifecycle: dev -> staging -> main.
 # dev, staging and main all run the backend and frontend test workflows, but
-# dev is not deployed. staging and main are deployed to separate ports on the
-# same VPS. Deployments require both test workflows to pass and a manual
-# approval from the GitHub environment configured in repo settings.
+# dev is not deployed. staging and main are deployed automatically to separate
+# ports on the same VPS, only after both test workflows pass.
 
 on:
   push:
@@ -33,7 +32,6 @@ jobs:
     name: Deploy ${{ github.event_name == 'workflow_dispatch' && inputs.environment || (github.ref_name == 'main' && 'main' || 'staging') }}
     needs: [backend-tests, frontend-tests]
     runs-on: ubuntu-latest
-    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || (github.ref_name == 'main' && 'production' || 'staging') }}
 
     steps:
       - name: Deploy compose stack on VPS
@@ -64,11 +62,15 @@ jobs:
             # Non-secret environment values (ports, URLs) are created once and
             # then left alone so local VPS tweaks survive later deploys.
             cp -n ".env.$ENV_NAME.example" ".env.$ENV_NAME" || true
+            # The public host lives only in the VPS_HOST secret, never in git.
+            sed -i "s|example.com|${{ secrets.VPS_HOST }}|g" ".env.$ENV_NAME"
 
             # Secret values come from the PostgreSQL credentials created by
             # the prepare workflow. Only generated on the first deploy.
             if [ ! -f .env.secrets ]; then
-              . /root/.django_pg.env
+              PG_ENV="/root/.django_pg.env"
+              if [ "$ENV_NAME" = "staging" ]; then PG_ENV="/root/.django_pg_staging.env"; fi
+              . "$PG_ENV"
               SECRET_KEY="$(openssl rand -base64 48)"
               printf '%s\n' "SECRET_KEY=$SECRET_KEY" "DATABASE_URL=postgres://$DB_USER:$DB_PASSWORD@host.docker.internal:5432/$DB_NAME" "DB_PASSWORD=$DB_PASSWORD" > .env.secrets
               chmod 600 .env.secrets
