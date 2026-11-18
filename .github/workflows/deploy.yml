@@ -61,15 +61,30 @@ jobs:
 
             # Non-secret environment values (ports, URLs) are created once and
             # then left alone so local VPS tweaks survive later deploys.
-            cp -n ".env.$ENV_NAME.example" ".env.$ENV_NAME" || true
+            cp --update=none ".env.$ENV_NAME.example" ".env.$ENV_NAME" || true
             # The public host lives only in the VPS_HOST secret, never in git.
             sed -i "s|example.com|${{ secrets.VPS_HOST }}|g" ".env.$ENV_NAME"
 
-            # Secret values come from the PostgreSQL credentials created by
-            # the prepare workflow. Only generated on the first deploy.
+            # Secret values come from the per-environment PostgreSQL
+            # credentials. Create them here if prepare has not run yet, so a
+            # first deploy on a fresh VPS cannot fail on a missing file.
             if [ ! -f .env.secrets ]; then
               PG_ENV="/root/.django_pg.env"
-              if [ "$ENV_NAME" = "staging" ]; then PG_ENV="/root/.django_pg_staging.env"; fi
+              DB_NAME="django_db"
+              DB_USER="django_user"
+              if [ "$ENV_NAME" = "staging" ]; then
+                PG_ENV="/root/.django_pg_staging.env"
+                DB_NAME="django_staging_db"
+                DB_USER="django_staging_user"
+              fi
+              if [ ! -f "$PG_ENV" ]; then
+                DB_PASS="$(openssl rand -base64 32 | tr -d '/+=' | cut -c1-32)"
+                printf '%s\n' "DB_NAME=$DB_NAME" "DB_USER=$DB_USER" "DB_PASSWORD=$DB_PASS" "DB_HOST=127.0.0.1" "DB_PORT=5432" > "$PG_ENV"
+                chmod 600 "$PG_ENV"
+                runuser -u postgres -- psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='$DB_USER'" postgres | grep -q 1 || runuser -u postgres -- psql -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PASS';" postgres
+                runuser -u postgres -- psql -tAc "SELECT 1 FROM pg_database WHERE datname='$DB_NAME'" postgres | grep -q 1 || runuser -u postgres -- createdb -O "$DB_USER" "$DB_NAME"
+                runuser -u postgres -- psql -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;" postgres
+              fi
               . "$PG_ENV"
               SECRET_KEY="$(openssl rand -base64 48)"
               printf '%s\n' "SECRET_KEY=$SECRET_KEY" "DATABASE_URL=postgres://$DB_USER:$DB_PASSWORD@host.docker.internal:5432/$DB_NAME" "DB_PASSWORD=$DB_PASSWORD" > .env.secrets
