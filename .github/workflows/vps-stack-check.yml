@@ -1,0 +1,99 @@
+name: VPS Stack Check
+
+# Verifies that Docker and PostgreSQL are available on the VPS and installs
+# either of them if missing. Safe to re-run: services already present are left
+# untouched.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 3 * * 1" # every Monday at 03:17 UTC
+
+jobs:
+  ensure-stack:
+    name: Ensure Docker + PostgreSQL on VPS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check and install missing services
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script_stop: true
+          script: |
+            set -e
+            export DEBIAN_FRONTEND=noninteractive
+
+            echo "=== Docker ==="
+            if command -v docker >/dev/null 2>&1 && systemctl is-active --quiet docker; then
+              echo "Docker already installed and running: $(docker --version)"
+            else
+              echo "Docker missing or not running - installing..."
+              apt-get update -qq
+              apt-get install -y -qq ca-certificates curl gnupg
+              install -m 0755 -d /etc/apt/keyrings
+              curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+              chmod a+r /etc/apt/keyrings/docker.asc
+              . /etc/os-release
+              echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $VERSION_CODENAME stable" > /etc/apt/sources.list.d/docker.list
+              apt-get update -qq
+              apt-get install -y -qq docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+              systemctl enable --now docker
+              echo "Docker installed."
+            fi
+
+            echo "=== PostgreSQL ==="
+            if command -v psql >/dev/null 2>&1 && systemctl is-active --quiet postgresql; then
+              echo "PostgreSQL already installed and running: $(psql --version)"
+            else
+              echo "PostgreSQL missing or not running - installing..."
+              apt-get update -qq
+              apt-get install -y -qq postgresql postgresql-contrib
+              systemctl enable --now postgresql
+
+              PGVER="$(ls /etc/postgresql | head -1)"
+              DB_NAME="django_db"
+              DB_USER="django_user"
+              DB_PASS="$(openssl rand -base64 32 | tr -d '/+=' | cut -c1-32)"
+              cat > /root/.django_pg.env <<EOF
+              DB_NAME=$DB_NAME
+              DB_USER=$DB_USER
+              DB_PASSWORD=$DB_PASS
+              DB_HOST=127.0.0.1
+              DB_PORT=5432
+              EOF
+              chmod 600 /root/.django_pg.env
+              cat > /tmp/django_pg_init.sql <<EOF
+              CREATE USER $DB_USER WITH PASSWORD '$DB_PASS';
+              CREATE DATABASE $DB_NAME OWNER $DB_USER;
+              GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;
+              EOF
+              runuser -u postgres -- psql -v ON_ERROR_STOP=1 -f /tmp/django_pg_init.sql
+              rm -f /tmp/django_pg_init.sql
+
+              sed -i "s/^#\?listen_addresses.*/listen_addresses = '*'/" "/etc/postgresql/$PGVER/main/postgresql.conf"
+              cat >> "/etc/postgresql/$PGVER/main/pg_hba.conf" <<EOF
+
+              # Django / remote access
+              host    all             all             127.0.0.1/32            scram-sha-256
+              host    all             all             ::1/128                 scram-sha-256
+              host    all             all             0.0.0.0/0               scram-sha-256
+              host    all             all             ::/0                    scram-sha-256
+              EOF
+              systemctl restart postgresql
+              echo "PostgreSQL installed and configured."
+            fi
+
+            echo "=== Verification ==="
+            systemctl is-active docker
+            systemctl is-enabled docker
+            systemctl is-active postgresql
+            systemctl is-enabled postgresql
+            docker info --format 'Docker server: {{.ServerVersion}}'
+            docker compose version
+            pg_isready -h 127.0.0.1 -p 5432
+            runuser -u postgres -- psql -Atc 'SELECT current_database()' postgres
+            echo "=== Stack check complete ==="
