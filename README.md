@@ -185,13 +185,14 @@ The staff tick **Accepts referrals** on the accounts that are willing to receive
 
 The country is divided the way it is divided in Algeria: a **region** holds **wilayas**, and every wilaya holds its **dairas**.
 
-- The staff create them in the admin (**Admin → Accounts → Regions**), with the wilayas of a region and the dairas of a wilaya as inlines.
-- The **sign-up form** asks for a wilaya and a daira (two select boxes); the dairas follow the wilaya that was picked.
+- Regions are **admin-only**: staff create them in the admin (**Admin → Accounts → Regions**) and assign wilayas to them later. They are never exposed to customers.
+- The **sign-up form** asks for a wilaya and a daira (two select boxes). It fetches all wilayas first, then fetches the dairas of the selected wilaya.
 - The admin analytics page shows an **Owed by region** bar chart: what the free-spend customers of every region still owe the shop.
 
 | Method | Endpoint | Description |
 | --- | --- | --- |
-| GET | `/api/auth/regions/` | The regions with their wilayas and dairas |
+| GET | `/api/auth/wilayas/` | All active wilayas (no regions, no nested dairas) |
+| GET | `/api/auth/dairas/?wilaya=<id>` | The dairas of one wilaya |
 | GET | `/api/auth/referrals/` | The referral program of the customer: their code, their total and their earnings |
 
 ## Codes and simultaneous orders

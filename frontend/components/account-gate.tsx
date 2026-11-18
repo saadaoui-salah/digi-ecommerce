@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Clock, RefreshCw } from "lucide-react";
+import { Clock, Loader2, RefreshCw } from "lucide-react";
 
 import { LockedPanel } from "@/components/package-groups";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ import { useI18n } from "@/lib/i18n";
  */
 export function PendingApproval() {
   const { t } = useI18n();
-  const { user, refresh, signOut } = useSession();
+  const { user, refresh, signOut, signingOut } = useSession();
 
   return (
     <div className="rounded-2xl border border-border bg-card px-5 py-12 text-center sm:px-10">
@@ -45,10 +45,12 @@ export function PendingApproval() {
         <Button
           type="button"
           onClick={() => signOut()}
+          disabled={signingOut}
           variant="outline"
-          className="btn-animate inline-flex h-10 items-center rounded-lg px-4 text-sm font-medium text-foreground hover:border-foreground/25 hover:bg-surface-muted"
+          className="btn-animate inline-flex h-10 items-center gap-2 rounded-lg px-4 text-sm font-medium text-foreground hover:border-foreground/25 hover:bg-surface-muted disabled:opacity-60"
         >
-          {t("common.signOut")}
+          {signingOut && <Loader2 className="size-4 animate-spin" />}
+          {signingOut ? t("common.signingOut") : t("common.signOut")}
         </Button>
       </div>
     </div>

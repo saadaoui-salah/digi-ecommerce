@@ -8,6 +8,7 @@ import {
   ChartNoAxesColumn,
   HandCoins,
   House,
+  Loader2,
   LayoutList,
   Receipt,
   Settings,
@@ -19,6 +20,7 @@ import {
 
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useSession } from "@/components/use-session";
 import type { User } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 
@@ -46,6 +48,7 @@ export function SiteSidebar({
   onSignOut?: () => void;
 }) {
   const { t } = useI18n();
+  const { signingOut } = useSession();
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -195,10 +198,20 @@ export function SiteSidebar({
                 closeSidebar();
                 onSignOut?.();
               }}
-              className="btn-animate group/btn flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-border text-sm font-medium text-foreground hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
+              disabled={signingOut}
+              className="btn-animate group/btn flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-border text-sm font-medium text-foreground hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive disabled:opacity-60"
             >
-              {t("common.signOut")}
-              <ArrowRight className="size-3.5 transition-transform duration-200 group-hover/btn:translate-x-0.5 rtl:rotate-180 rtl:group-hover/btn:-translate-x-0.5" />
+              {signingOut ? (
+                <>
+                  <Loader2 className="size-3.5 animate-spin" />
+                  {t("common.signingOut")}
+                </>
+              ) : (
+                <>
+                  {t("common.signOut")}
+                  <ArrowRight className="size-3.5 transition-transform duration-200 group-hover/btn:translate-x-0.5 rtl:rotate-180 rtl:group-hover/btn:-translate-x-0.5" />
+                </>
+              )}
             </button>
           ) : (
             <Link

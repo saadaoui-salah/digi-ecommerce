@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Noto_Sans_Arabic } from "next/font/google";
 
 import { ReferralCapture } from "@/components/referral-capture";
+import { SessionProvider } from "@/components/use-session";
 import { ToastProvider } from "@/components/toast";
 import { I18nProvider } from "@/lib/i18n";
 import "./globals.css";
@@ -51,8 +52,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         />
         <I18nProvider>
           <ToastProvider>
-            <ReferralCapture />
-            {children}
+            <SessionProvider>
+              <ReferralCapture />
+              {children}
+            </SessionProvider>
           </ToastProvider>
         </I18nProvider>
       </body>
