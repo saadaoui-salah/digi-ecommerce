@@ -1,4 +1,4 @@
-name: VPS Stack Check
+name: prepare
 
 # Verifies that Docker and PostgreSQL are available on the VPS and installs
 # either of them if missing. Safe to re-run: services already present are left

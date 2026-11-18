@@ -89,9 +89,9 @@ TIME_ZONE = "Africa/Algiers"
 USE_TZ = False
 USE_I18N = True
 
-STATIC_URL = "static/"
+STATIC_URL = os.getenv("STATIC_URL", "static/")
 STATIC_ROOT = BASE_DIR / "staticfiles"
-MEDIA_URL = "/media/"
+MEDIA_URL = os.getenv("MEDIA_URL", "/media/")
 MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
@@ -118,7 +118,9 @@ SIMPLE_JWT = {
     "AUTH_COOKIE": "access",
     "AUTH_COOKIE_REFRESH": "refresh",
     "AUTH_COOKIE_HTTP_ONLY": True,
-    "AUTH_COOKIE_SECURE": not DEBUG,
+    # Over HTTP (IP + port access) browsers reject Secure cookies, so allow an
+    # explicit override while keeping the safe default in production.
+    "AUTH_COOKIE_SECURE": os.getenv("AUTH_COOKIE_SECURE", str(not DEBUG)).lower() == "true",
     "AUTH_COOKIE_SAMESITE": "Lax",
     "AUTH_COOKIE_PATH": "/",
 }

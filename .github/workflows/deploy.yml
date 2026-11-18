@@ -1,65 +1,81 @@
-name: Deploy
+name: deploy
 
-# The deploy waits for the tests: it only runs when the Tests workflow of the
-# same branch finished green. Nothing reaches the server before the tests
-# passed.
+# Branch lifecycle: dev -> staging -> main.
+# dev is tested but not deployed. staging and main are deployed to separate
+# ports on the same VPS. Deployments require the Tests workflow to pass and a
+# manual approval from the GitHub environment configured in repo settings.
+
 on:
-  workflow_run:
-    workflows: ["Tests"]
-    branches: [main, staging]
-    types: [completed]
+  push:
+    branches: [staging, main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to deploy"
+        required: true
+        default: staging
+        type: choice
+        options:
+          - staging
+          - main
 
 jobs:
-  deploy:
-    name: Deploy to ${{ github.event.workflow_run.head_branch }}
-    if: github.event.workflow_run.conclusion == 'success'
-    runs-on: ubuntu-latest
+  tests:
+    name: Tests
+    uses: ./.github/workflows/tests.yml
 
-    # The environment holds the secrets of the branch: staging and main can
-    # point at different servers.
-    environment: ${{ github.event.workflow_run.head_branch }}
+  deploy:
+    name: Deploy ${{ github.event_name == 'workflow_dispatch' && inputs.environment || (github.ref_name == 'main' && 'main' || 'staging') }}
+    needs: tests
+    runs-on: ubuntu-latest
+    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || (github.ref_name == 'main' && 'production' || 'staging') }}
 
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha }}
-
-      - name: Deploy the backend
+      - name: Deploy compose stack on VPS
         uses: appleboy/ssh-action@v1
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.SSH_PORT || 22 }}
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script_stop: true
           script: |
-            cd ${{ secrets.SSH_PATH }}
-            git fetch --all
-            git reset --hard ${{ github.event.workflow_run.head_sha }}
-            .venv/bin/pip install --upgrade pip
-            .venv/bin/pip install -r requirements.txt
-            .venv/bin/python manage.py migrate --noinput
-            .venv/bin/python manage.py collectstatic --noinput
-            sudo systemctl restart digi
+            set -e
+            ENV_NAME="${{ github.event_name == 'workflow_dispatch' && inputs.environment || (github.ref_name == 'main' && 'main' || 'staging') }}"
+            REF="${{ github.event_name == 'workflow_dispatch' && inputs.environment || github.ref_name }}"
+            DEPLOY_DIR="/srv/digi-$ENV_NAME"
 
-      - name: Build the frontend
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.SSH_PORT || 22 }}
-          script: |
-            cd ${{ secrets.SSH_PATH }}/frontend
-            git fetch --all
-            git reset --hard ${{ github.event.workflow_run.head_sha }}
-            npm ci
-            npm run build
+            echo "=== Deploying $ENV_NAME from $REF into $DEPLOY_DIR ==="
+            mkdir -p "$DEPLOY_DIR/staticfiles" "$DEPLOY_DIR/media"
+            cd "$DEPLOY_DIR"
 
-      - name: Restart the frontend
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.SSH_PORT || 22 }}
-          script: sudo systemctl restart digi-frontend
+            if [ ! -d .git ]; then
+              git clone https://github.com/saadaoui-salah/digi-ecommerce.git .
+            fi
+            git fetch --all
+            git reset --hard "origin/$REF"
+
+            # Non-secret environment values (ports, URLs) are created once and
+            # then left alone so local VPS tweaks survive later deploys.
+            cp -n ".env.$ENV_NAME.example" ".env.$ENV_NAME" || true
+
+            # Secret values come from the PostgreSQL credentials created by
+            # the prepare workflow. Only generated on the first deploy.
+            if [ ! -f .env.secrets ]; then
+              . /root/.django_pg.env
+              SECRET_KEY="$(openssl rand -base64 48)"
+              printf '%s\n' "SECRET_KEY=$SECRET_KEY" "DATABASE_URL=postgres://$DB_USER:$DB_PASSWORD@host.docker.internal:5432/$DB_NAME" "DB_PASSWORD=$DB_PASSWORD" > .env.secrets
+              chmod 600 .env.secrets
+            fi
+
+            echo "=== Building images ==="
+            docker compose --env-file ".env.$ENV_NAME" build
+
+            echo "=== Running migrations and collectstatic ==="
+            docker compose --env-file ".env.$ENV_NAME" run --rm backend python manage.py migrate --noinput
+            docker compose --env-file ".env.$ENV_NAME" run --rm backend python manage.py collectstatic --noinput
+
+            echo "=== Starting stack ==="
+            docker compose --env-file ".env.$ENV_NAME" up -d --remove-orphans
+            docker compose --env-file ".env.$ENV_NAME" ps
+            echo "=== Deploy complete: $ENV_NAME ==="
