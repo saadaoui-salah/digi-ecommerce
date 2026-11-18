@@ -25,13 +25,13 @@ import {
 import { ProductCard } from "@/components/product-card";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { useSession } from "@/components/use-session";
 import { ProductGridSkeleton } from "@/components/skeletons";
 import {
   api,
   type Category,
   type Paginated,
   type Product,
-  type User as UserType,
 } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 
@@ -74,8 +74,7 @@ type DealsState = {
 
 export default function HomePage() {
   const { t } = useI18n();
-  const [user, setUser] = useState<UserType | null>(null);
-  const [checkingSession, setCheckingSession] = useState(true);
+  const { user, checkingSession, signOut } = useSession();
 
   const [catalog, setCatalog] = useState<CatalogState | null>(null);
   const [deals, setDeals] = useState<DealsState | null>(null);
@@ -90,34 +89,10 @@ export default function HomePage() {
   const dealProducts = dealsForUser?.products ?? [];
 
   const handleSignOut = useCallback(async () => {
-    try {
-      await api("/auth/logout/", { method: "POST" });
-    } catch {
-      // The session is cleared locally even if the request fails.
-    }
-    setUser(null);
     setCatalog(null);
     setDeals(null);
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    api<UserType>("/auth/me/")
-      .then((data) => {
-        if (!cancelled) setUser(data);
-      })
-      .catch(() => {
-        if (!cancelled) setUser(null);
-      })
-      .finally(() => {
-        if (!cancelled) setCheckingSession(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    await signOut();
+  }, [signOut]);
 
   useEffect(() => {
     if (!user) return;

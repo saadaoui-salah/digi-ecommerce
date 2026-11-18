@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.db import transaction as db_transaction
-from django.db.models import Count, Prefetch, Q, Sum, Value
+from django.db.models import Count, Q, Sum, Value
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -29,7 +29,6 @@ from .models import (
     Order,
     OrderReport,
     OrderStatus,
-    Region,
     Transaction,
     TransactionKind,
     User,
@@ -45,8 +44,9 @@ from .serializers import (
     OrderReportSerializer,
     OrderSerializer,
     OrderSoldSerializer,
-    RegionSerializer,
+    DairaSerializer,
     RegisterSerializer,
+    WilayaOptionSerializer,
     ReferralProgramSerializer,
     TransactionCreateSerializer,
     TransactionSerializer,
@@ -559,28 +559,29 @@ class CreditListView(APIView):
         )
 
 
-class RegionListView(APIView):
-    """The regions of the country with their wilayas and dairas.
-
-    The sign-up form needs the three of them at once, so they travel in one
-    answer.
-    """
+class WilayaListView(APIView):
+    """All active wilayas. Regions are admin-only and never exposed here."""
 
     permission_classes = [permissions.AllowAny]
 
     def get(self, request):
-        regions = Region.objects.filter(is_active=True).prefetch_related(
-            Prefetch(
-                "wilayas",
-                queryset=Wilaya.objects.filter(is_active=True).prefetch_related(
-                    Prefetch(
-                        "dairas",
-                        queryset=Daira.objects.filter(is_active=True),
-                    )
-                ),
-            )
-        )
-        return Response(RegionSerializer(regions, many=True).data)
+        wilayas = Wilaya.objects.filter(is_active=True).order_by("name")
+        return Response(WilayaOptionSerializer(wilayas, many=True).data)
+
+
+class DairaListView(APIView):
+    """The dairas of one wilaya, fetched when the visitor picks it."""
+
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        wilaya_id = request.query_params.get("wilaya")
+        if not wilaya_id or not str(wilaya_id).isdigit():
+            return Response({"detail": "A valid wilaya id is required."}, status=400)
+        dairas = Daira.objects.filter(
+            is_active=True, wilaya_id=int(wilaya_id), wilaya__is_active=True
+        ).order_by("name")
+        return Response(DairaSerializer(dairas, many=True).data)
 
 
 class ReferralProgramView(APIView):

@@ -72,6 +72,8 @@ function changeLocale(next: Locale) {
 
 const en = {
   "common.signOut": "Sign out",
+  "common.signingOut": "Signing out…",
+  "common.loading": "Loading…",
   "common.credit": "credit",
   "common.themeToggle": "Toggle color theme",
   "common.language": "Language",
@@ -488,6 +490,8 @@ export type MessageKey = keyof typeof en;
 type Dictionary = Record<MessageKey, string>;
 const fr = {
   "common.signOut": "Se déconnecter",
+  "common.signingOut": "Déconnexion…",
+  "common.loading": "Chargement…",
   "common.credit": "crédit",
   "common.themeToggle": "Changer de thème",
   "common.language": "Langue",
@@ -909,6 +913,8 @@ const fr = {
 
 const ar = {
   "common.signOut": "تسجيل الخروج",
+  "common.signingOut": "جارٍ تسجيل الخروج…",
+  "common.loading": "جارٍ التحميل…",
   "common.credit": "رصيد",
   "common.themeToggle": "تبديل المظهر",
   "common.language": "اللغة",
