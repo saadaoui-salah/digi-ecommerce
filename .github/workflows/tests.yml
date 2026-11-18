@@ -71,6 +71,12 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Generate the route types
+        # Next.js writes the types used by the app (LayoutProps, PageProps,
+        # the typed routes) into .next/types. Without this, a fresh checkout
+        # has no LayoutProps and tsc fails.
+        run: npx next typegen
+
       - name: Type check
         run: npx tsc --noEmit
 
