@@ -13,6 +13,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from apps.core.time import now as algeria_now
 
 from .filters import CategoryFilter, ProductFilter
+from .services import claim_next_code
 from .models import (
     Category,
     ItemType,
@@ -120,30 +121,20 @@ class PackageViewSet(viewsets.ReadOnlyModelViewSet):
             )
 
         with transaction.atomic():
-            code = (
-                PackageCode.objects.select_for_update()
-                .filter(package=package, is_used=False)
-                .order_by("created_at", "id")
-                .first()
-            )
-
-            if code is None:
-                return Response(
-                    {"detail": "No codes are left for this package."},
-                    status=status.HTTP_409_CONFLICT,
-                )
-
             if not package.is_active:
                 return Response(
                     {"detail": "This package is sold out."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            code.is_used = True
-            code.claimed_by = request.user
-            code.claimed_at = algeria_now()
-            code.save(update_fields=["is_used", "claimed_by", "claimed_at"])
-
+            # The claim is a conditional UPDATE, so two requests cannot take
+            # the same code.
+            code = claim_next_code(package, request.user)
+            if code is None:
+                return Response(
+                    {"detail": "No codes are left for this package."},
+                    status=status.HTTP_409_CONFLICT,
+                )
             # The signal takes the code out of the stock of the package.
         return Response(
             PackageCodeSerializer(code).data, status=status.HTTP_201_CREATED

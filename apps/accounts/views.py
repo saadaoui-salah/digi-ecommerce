@@ -17,6 +17,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from apps.catalog.models import ItemType, PackageCode
 from apps.catalog.promotions import promotion_price
+from apps.catalog.services import claim_next_code
 from apps.core.time import now as algeria_now
 
 from .models import (
@@ -237,21 +238,14 @@ class OrderListCreateView(generics.ListCreateAPIView):
 
                 code = None
                 if is_instant:
-                    code = (
-                        PackageCode.objects.select_for_update()
-                        .filter(package=package, is_used=False)
-                        .order_by("created_at", "id")
-                        .first()
-                    )
+                    # The conditional UPDATE inside claim_next_code makes sure
+                    # only one of two simultaneous customers can get a code.
+                    code = claim_next_code(package, account)
                     if code is None:
                         return Response(
                             {"detail": "No codes are left for this package."},
                             status=status.HTTP_409_CONFLICT,
                         )
-                    code.is_used = True
-                    code.claimed_by = account
-                    code.claimed_at = algeria_now()
-                    code.save(update_fields=["is_used", "claimed_by", "claimed_at"])
 
                 order = create_order(
                     user=account,

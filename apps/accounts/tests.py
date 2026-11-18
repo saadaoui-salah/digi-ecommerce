@@ -1917,3 +1917,91 @@ class RegionTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("balladia", response.data)
+
+
+class ConcurrentCodeTests(APITestCase):
+    """Two customers never receive the same code."""
+
+    def setUp(self):
+        self.category = Category.objects.create(name="Race", slug="race")
+        self.product = Product.objects.create(
+            name="Race Pass",
+            slug="race-pass",
+            category=self.category,
+            type=ItemType.IMMEDIATE,
+        )
+        self.package = Package.objects.create(
+            product=self.product,
+            name="1 Month",
+            type=ItemType.IMMEDIATE,
+            price=Decimal("10.00"),
+            delivery_url="https://example.com/delivery",
+        )
+        self.code = PackageCode.objects.create(
+            package=self.package, code="only@example.com|secret-pass"
+        )
+
+    def _client_for(self, email):
+        User.objects.create_user(
+            username=email.split("@")[0],
+            email=email,
+            password="strong-password-123",
+            credit=Decimal("100.00"),
+        )
+        client = APIClient()
+        response = client.post(
+            "/api/auth/token/",
+            {"email": email, "password": "strong-password-123"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        return client
+
+    def test_two_customers_cannot_claim_the_same_code(self):
+        first = self._client_for("first@example.com")
+        second = self._client_for("second@example.com")
+
+        ok = first.post(
+            "/api/auth/orders/",
+            {"package": self.package.id},
+            format="json",
+        )
+        denied = second.post(
+            "/api/auth/orders/",
+            {"package": self.package.id},
+            format="json",
+        )
+
+        self.assertEqual(ok.status_code, status.HTTP_201_CREATED)
+        # In this sequential test the serializer sees the empty package first
+        # (400). Under a true race both requests pass validation and the
+        # conditional UPDATE is the one that decides (409).
+        self.assertIn(
+            denied.status_code,
+            (status.HTTP_400_BAD_REQUEST, status.HTTP_409_CONFLICT),
+        )
+
+        self.code.refresh_from_db()
+        self.assertTrue(self.code.is_used)
+        self.assertEqual(self.code.order.user.email, "first@example.com")
+        # The order of the second customer did not take the code.
+        self.assertEqual(Order.objects.count(), 1)
+
+    def test_the_stock_moves_once_for_the_code(self):
+        first = self._client_for("first@example.com")
+        second = self._client_for("second@example.com")
+
+        first.post(
+            "/api/auth/orders/",
+            {"package": self.package.id},
+            format="json",
+        )
+        second.post(
+            "/api/auth/orders/",
+            {"package": self.package.id},
+            format="json",
+        )
+
+        self.package.refresh_from_db()
+        self.assertEqual(self.package.stock, 0)
+        self.assertEqual(self.package.codes_available, 0)

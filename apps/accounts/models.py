@@ -675,12 +675,13 @@ class Order(models.Model):
         related_name="orders",
         help_text="Sub package, e.g. the country of a grouped product.",
     )
-    code = models.ForeignKey(
+    code = models.OneToOneField(
         "catalog.PackageCode",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name="orders",
+        related_name="order",
+        help_text="A code is delivered to one order only.",
     )
     # Snapshots keep the history readable when the catalog changes.
     product_name = models.CharField(max_length=200)

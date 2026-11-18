@@ -11,40 +11,11 @@ for — so every staff account carries the same numbers and the admin page
 reads them from there.
 """
 
-from decimal import Decimal
-
-from django.db.models import F
 from django.db.models.signals import post_delete, post_save, pre_save
 from django.dispatch import receiver
 
-from apps.accounts.models import User
-
 from .models import ItemType, PackageCode
-
-
-def _move_stock(package, delta: int):
-    """Add or take one code away from the stock of the package."""
-    package.stock = max(0, (package.stock or 0) + delta)
-    package.save(update_fields=["stock"])
-
-
-def _move_stock_worth(package, delta: int):
-    """Move the worth of the unsold stock on the staff accounts."""
-    if not delta:
-        return
-
-    worth = Decimal(package.price) * delta
-    User.objects.filter(is_staff=True).update(stock_worth=F("stock_worth") + worth)
-
-
-def _move_stock_quantity(delta: int):
-    """Move the number of codes that are waiting to be sold."""
-    if not delta:
-        return
-
-    User.objects.filter(is_staff=True).update(
-        stock_quantity=F("stock_quantity") + delta
-    )
+from .services import code_joined_stock, code_left_stock
 
 
 @receiver(pre_save, sender=PackageCode)
@@ -77,16 +48,12 @@ def track_code_stock(sender, instance, created, **kwargs):
         return
 
     if created:
-        _move_stock(package, 1)
-        _move_stock_worth(package, 1)
-        _move_stock_quantity(1)
+        code_joined_stock(package)
         return
 
     if instance.is_used and not getattr(instance, "_was_used", False):
         # The code was sold: it is no longer part of the unsold stock.
-        _move_stock(package, -1)
-        _move_stock_worth(package, -1)
-        _move_stock_quantity(-1)
+        code_left_stock(package)
 
 
 @receiver(post_delete, sender=PackageCode)
@@ -101,6 +68,4 @@ def forget_code_stock(sender, instance, **kwargs):
         return
 
     if not instance.is_used:
-        _move_stock(package, -1)
-        _move_stock_worth(package, -1)
-        _move_stock_quantity(-1)
+        code_left_stock(package)

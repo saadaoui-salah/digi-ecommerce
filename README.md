@@ -194,6 +194,10 @@ The country is divided the way it is divided in Algeria: a **region** holds **wi
 | GET | `/api/auth/regions/` | The regions with their wilayas and balladias |
 | GET | `/api/auth/referrals/` | The referral program of the customer: their code, their total and their earnings |
 
+## Codes and simultaneous orders
+
+A code is delivered once: `Order.code` is a one-to-one field, so the database itself refuses to give the same code to two orders. On top of that, claiming a code is a **conditional UPDATE** — `UPDATE … WHERE is_used = False` — so only one of two customers arriving at the same moment can take it; the other one is told the package is sold out. This works on SQLite and on PostgreSQL (where `select_for_update` also applies). The stock and its worth move once, for the customer who actually got the code.
+
 ## Resale tracking
 
 Customers can record how much they resold an order for, then search and filter their orders around it.
