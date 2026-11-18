@@ -58,31 +58,14 @@ jobs:
               DB_NAME="django_db"
               DB_USER="django_user"
               DB_PASS="$(openssl rand -base64 32 | tr -d '/+=' | cut -c1-32)"
-              cat > /root/.django_pg.env <<EOF
-              DB_NAME=$DB_NAME
-              DB_USER=$DB_USER
-              DB_PASSWORD=$DB_PASS
-              DB_HOST=127.0.0.1
-              DB_PORT=5432
-              EOF
+              printf '%s\n' "DB_NAME=$DB_NAME" "DB_USER=$DB_USER" "DB_PASSWORD=$DB_PASS" "DB_HOST=127.0.0.1" "DB_PORT=5432" > /root/.django_pg.env
               chmod 600 /root/.django_pg.env
-              cat > /tmp/django_pg_init.sql <<EOF
-              CREATE USER $DB_USER WITH PASSWORD '$DB_PASS';
-              CREATE DATABASE $DB_NAME OWNER $DB_USER;
-              GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;
-              EOF
+              printf '%s\n' "CREATE USER $DB_USER WITH PASSWORD '$DB_PASS';" "CREATE DATABASE $DB_NAME OWNER $DB_USER;" "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;" > /tmp/django_pg_init.sql
               runuser -u postgres -- psql -v ON_ERROR_STOP=1 -f /tmp/django_pg_init.sql
               rm -f /tmp/django_pg_init.sql
 
               sed -i "s/^#\?listen_addresses.*/listen_addresses = '*'/" "/etc/postgresql/$PGVER/main/postgresql.conf"
-              cat >> "/etc/postgresql/$PGVER/main/pg_hba.conf" <<EOF
-
-              # Django / remote access
-              host    all             all             127.0.0.1/32            scram-sha-256
-              host    all             all             ::1/128                 scram-sha-256
-              host    all             all             0.0.0.0/0               scram-sha-256
-              host    all             all             ::/0                    scram-sha-256
-              EOF
+              printf '%s\n' "" "# Django / remote access" "host    all             all             127.0.0.1/32            scram-sha-256" "host    all             all             ::1/128                 scram-sha-256" "host    all             all             0.0.0.0/0               scram-sha-256" "host    all             all             ::/0                    scram-sha-256" >> "/etc/postgresql/$PGVER/main/pg_hba.conf"
               systemctl restart postgresql
               echo "PostgreSQL installed and configured."
             fi
