@@ -1,9 +1,10 @@
 name: deploy
 
 # Branch lifecycle: dev -> staging -> main.
-# dev is tested but not deployed. staging and main are deployed to separate
-# ports on the same VPS. Deployments require the Tests workflow to pass and a
-# manual approval from the GitHub environment configured in repo settings.
+# dev, staging and main all run the backend and frontend test workflows, but
+# dev is not deployed. staging and main are deployed to separate ports on the
+# same VPS. Deployments require both test workflows to pass and a manual
+# approval from the GitHub environment configured in repo settings.
 
 on:
   push:
@@ -20,13 +21,17 @@ on:
           - main
 
 jobs:
-  tests:
-    name: Tests
-    uses: ./.github/workflows/tests.yml
+  backend-tests:
+    name: Backend Tests
+    uses: ./.github/workflows/backend-tests.yml
+
+  frontend-tests:
+    name: Frontend Tests
+    uses: ./.github/workflows/frontend-tests.yml
 
   deploy:
     name: Deploy ${{ github.event_name == 'workflow_dispatch' && inputs.environment || (github.ref_name == 'main' && 'main' || 'staging') }}
-    needs: tests
+    needs: [backend-tests, frontend-tests]
     runs-on: ubuntu-latest
     environment: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || (github.ref_name == 'main' && 'production' || 'staging') }}
 
@@ -50,7 +55,8 @@ jobs:
             cd "$DEPLOY_DIR"
 
             if [ ! -d .git ]; then
-              git clone https://github.com/saadaoui-salah/digi-ecommerce.git .
+              git init
+              git remote add origin https://github.com/saadaoui-salah/digi-ecommerce.git
             fi
             git fetch --all
             git reset --hard "origin/$REF"

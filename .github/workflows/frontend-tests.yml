@@ -1,0 +1,52 @@
+name: Frontend Tests
+
+# Runs Next.js lint, type check and production build on dev, staging and main,
+# plus every pull request aimed at them. Reusable by the deploy workflow.
+on:
+  push:
+    branches: [dev, staging, main]
+  pull_request:
+    branches: [dev, staging, main]
+  workflow_call:
+
+concurrency:
+  group: frontend-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    name: Frontend checks
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install the dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Generate the route types
+        # Next.js writes the types used by the app (LayoutProps, PageProps,
+        # the typed routes) into .next/types. Without this, a fresh checkout
+        # has no LayoutProps and tsc fails.
+        run: npx next typegen
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8000
