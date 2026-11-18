@@ -19,7 +19,7 @@ export type User = {
   referral_percentage: string;
   referral_code: string;
   wilaya: number | null;
-  balladia: number | null;
+  daira: number | null;
   date_joined: string;
 };
 
@@ -229,7 +229,7 @@ export type CreditSummary = {
   results: Credit[];
 };
 
-export type Balladia = {
+export type Daira = {
   id: number;
   name: string;
   wilaya: number;
@@ -241,7 +241,7 @@ export type Wilaya = {
   name: string;
   region: number;
   is_active: boolean;
-  balladias: Balladia[];
+  dairas: Daira[];
 };
 
 export type Region = {

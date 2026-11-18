@@ -7,7 +7,7 @@ from rest_framework_simplejwt.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from .models import (
-    Balladia,
+    Daira,
     Credit,
     CreditKind,
     Notification,
@@ -22,18 +22,18 @@ from .models import (
 from ..catalog.models import Package
 
 
-class BalladiaSerializer(serializers.ModelSerializer):
+class DairaSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Balladia
+        model = Daira
         fields = ("id", "name", "wilaya", "is_active")
 
 
 class WilayaSerializer(serializers.ModelSerializer):
-    balladias = BalladiaSerializer(many=True, read_only=True)
+    dairas = DairaSerializer(many=True, read_only=True)
 
     class Meta:
         model = Wilaya
-        fields = ("id", "name", "region", "is_active", "balladias")
+        fields = ("id", "name", "region", "is_active", "dairas")
 
 
 class RegionSerializer(serializers.ModelSerializer):
@@ -56,8 +56,8 @@ class RegisterSerializer(serializers.ModelSerializer):
         required=False,
         allow_null=True,
     )
-    balladia = serializers.PrimaryKeyRelatedField(
-        queryset=Balladia.objects.filter(is_active=True),
+    daira = serializers.PrimaryKeyRelatedField(
+        queryset=Daira.objects.filter(is_active=True),
         required=False,
         allow_null=True,
     )
@@ -82,18 +82,18 @@ class RegisterSerializer(serializers.ModelSerializer):
             "password",
             "referral_code",
             "wilaya",
-            "balladia",
+            "daira",
         )
         read_only_fields = ("id", "credit")
 
     def validate(self, attrs):
-        """The balladia has to be inside the wilaya that was picked."""
+        """The daira has to be inside the wilaya that was picked."""
         wilaya = attrs.get("wilaya")
-        balladia = attrs.get("balladia")
+        daira = attrs.get("daira")
 
-        if wilaya and balladia and balladia.wilaya_id != wilaya.id:
+        if wilaya and daira and daira.wilaya_id != wilaya.id:
             raise serializers.ValidationError(
-                {"balladia": "That balladia is not in the chosen wilaya."}
+                {"daira": "That daira is not in the chosen wilaya."}
             )
 
         return attrs

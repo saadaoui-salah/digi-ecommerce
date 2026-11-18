@@ -6,7 +6,7 @@ from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
 from apps.accounts.models import (
-    Balladia,
+    Daira,
     Coupon,
     Credit,
     CreditKind,
@@ -1867,15 +1867,15 @@ class ReferralTests(APITestCase):
 
 
 class RegionTests(APITestCase):
-    """The regions, the wilayas and the balladias."""
+    """The regions, the wilayas and the dairas."""
 
     def setUp(self):
         self.region = Region.objects.create(name="Centre")
         self.wilaya = Wilaya.objects.create(name="Alger", region=self.region)
-        self.balladia = Balladia.objects.create(
+        self.daira = Daira.objects.create(
             name="Bab El Oued", wilaya=self.wilaya
         )
-        self.other_balladia = Balladia.objects.create(
+        self.other_daira = Daira.objects.create(
             name="Blida", wilaya=Wilaya.objects.create(name="Blida", region=self.region)
         )
 
@@ -1890,33 +1890,33 @@ class RegionTests(APITestCase):
         payload.update(extra)
         return self.client.post("/api/auth/register/", payload, format="json")
 
-    def test_the_regions_travel_with_their_wilayas_and_balladias(self):
+    def test_the_regions_travel_with_their_wilayas_and_dairas(self):
         response = self.client.get("/api/auth/regions/")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data[0]["name"], "Centre")
         wilayas = response.data[0]["wilayas"]
         self.assertEqual(len(wilayas), 2)
-        names = [balladia["name"] for balladia in wilayas[0]["balladias"]]
+        names = [daira["name"] for daira in wilayas[0]["dairas"]]
         self.assertIn("Bab El Oued", names)
 
-    def test_an_account_can_pick_a_wilaya_and_a_balladia(self):
+    def test_an_account_can_pick_a_wilaya_and_a_daira(self):
         response = self._register(
-            wilaya=self.wilaya.id, balladia=self.balladia.id
+            wilaya=self.wilaya.id, daira=self.daira.id
         )
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         account = User.objects.get(email="new@example.com")
         self.assertEqual(account.wilaya, self.wilaya)
-        self.assertEqual(account.balladia, self.balladia)
+        self.assertEqual(account.daira, self.daira)
 
-    def test_the_balladia_has_to_be_in_the_wilaya(self):
+    def test_the_daira_has_to_be_in_the_wilaya(self):
         response = self._register(
-            wilaya=self.wilaya.id, balladia=self.other_balladia.id
+            wilaya=self.wilaya.id, daira=self.other_daira.id
         )
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("balladia", response.data)
+        self.assertIn("daira", response.data)
 
 
 class ConcurrentCodeTests(APITestCase):

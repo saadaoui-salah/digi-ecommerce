@@ -96,6 +96,7 @@ jobs:
 
             echo "=== Running migrations and collectstatic ==="
             docker compose --env-file ".env.$ENV_NAME" run --rm backend python manage.py migrate --noinput
+            docker compose --env-file ".env.$ENV_NAME" run --rm backend python manage.py load_geoalgeria
             docker compose --env-file ".env.$ENV_NAME" run --rm backend python manage.py collectstatic --noinput
 
             echo "=== Starting stack ==="

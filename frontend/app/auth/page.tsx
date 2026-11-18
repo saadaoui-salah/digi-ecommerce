@@ -136,7 +136,7 @@ export default function AuthPage() {
     password: "",
     confirm: "",
     wilaya: "",
-    balladia: "",
+    daira: "",
   });
   const [regions, setRegions] = useState<Region[]>([]);
 
@@ -160,13 +160,13 @@ export default function AuthPage() {
     };
   }, []);
 
-  // The balladias of the chosen wilaya.
-  const balladias = useMemo(() => {
+  // The dairas of the chosen wilaya.
+  const dairas = useMemo(() => {
     if (!signup.wilaya) return [];
 
     for (const region of regions) {
       for (const wilaya of region.wilayas) {
-        if (String(wilaya.id) === signup.wilaya) return wilaya.balladias;
+        if (String(wilaya.id) === signup.wilaya) return wilaya.dairas;
       }
     }
 
@@ -277,7 +277,7 @@ export default function AuthPage() {
           phone,
           password: signup.password,
           ...(signup.wilaya ? { wilaya: Number(signup.wilaya) } : {}),
-          ...(signup.balladia ? { balladia: Number(signup.balladia) } : {}),
+          ...(signup.daira ? { daira: Number(signup.daira) } : {}),
           ...(referral ? { referral_code: referral } : {}),
         }),
       });
@@ -575,7 +575,7 @@ export default function AuthPage() {
                         setSignup({
                           ...signup,
                           wilaya: event.target.value,
-                          balladia: "",
+                          daira: "",
                         })
                       }
                       className="h-11 w-full rounded-lg border border-border bg-card px-3 text-sm text-foreground outline-none focus:border-sky-500"
@@ -595,23 +595,23 @@ export default function AuthPage() {
 
                   <label className="block">
                     <span className="mb-1.5 block text-[11px] font-medium tracking-[0.18em] text-muted-foreground uppercase">
-                      {t("auth.balladia")}
+                      {t("auth.daira")}
                     </span>
                     <select
-                      id="balladia"
-                      name="balladia"
+                      id="daira"
+                      name="daira"
                       autoComplete="address-level2"
-                      value={signup.balladia}
+                      value={signup.daira}
                       onChange={(event) =>
-                        setSignup({ ...signup, balladia: event.target.value })
+                        setSignup({ ...signup, daira: event.target.value })
                       }
                       disabled={!signup.wilaya}
                       className="h-11 w-full rounded-lg border border-border bg-card px-3 text-sm text-foreground outline-none focus:border-sky-500 disabled:opacity-55"
                     >
-                      <option value="">{t("auth.chooseBalladia")}</option>
-                      {balladias.map((balladia) => (
-                        <option key={balladia.id} value={String(balladia.id)}>
-                          {balladia.name}
+                      <option value="">{t("auth.chooseDaira")}</option>
+                      {dairas.map((daira) => (
+                        <option key={daira.id} value={String(daira.id)}>
+                          {daira.name}
                         </option>
                       ))}
                     </select>

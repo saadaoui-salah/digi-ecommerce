@@ -21,7 +21,7 @@ from apps.catalog.services import claim_next_code
 from apps.core.time import now as algeria_now
 
 from .models import (
-    Balladia,
+    Daira,
     Credit,
     CreditKind,
     Notification,
@@ -560,7 +560,7 @@ class CreditListView(APIView):
 
 
 class RegionListView(APIView):
-    """The regions of the country with their wilayas and balladias.
+    """The regions of the country with their wilayas and dairas.
 
     The sign-up form needs the three of them at once, so they travel in one
     answer.
@@ -574,8 +574,8 @@ class RegionListView(APIView):
                 "wilayas",
                 queryset=Wilaya.objects.filter(is_active=True).prefetch_related(
                     Prefetch(
-                        "balladias",
-                        queryset=Balladia.objects.filter(is_active=True),
+                        "dairas",
+                        queryset=Daira.objects.filter(is_active=True),
                     )
                 ),
             )

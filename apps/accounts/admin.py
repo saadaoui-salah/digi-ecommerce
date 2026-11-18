@@ -20,7 +20,7 @@ from .models import (
     User,
 )
 from .models import (
-    Balladia,
+    Daira,
     Coupon,
     Credit,
     CreditKind,
@@ -58,7 +58,7 @@ class UserAdmin(BaseUserAdmin, ModelAdmin):
     )
     list_filter = ("is_approved", "is_sub_admin", "is_staff", "is_superuser", "is_active")
     search_fields = ("username", "email", "phone", "first_name", "last_name")
-    autocomplete_fields = ("wilaya", "balladia")
+    autocomplete_fields = ("wilaya", "daira")
     readonly_fields = (
         "total_revenue",
         "net_profit",
@@ -81,7 +81,7 @@ class UserAdmin(BaseUserAdmin, ModelAdmin):
                     "email",
                     "phone",
                     "wilaya",
-                    "balladia",
+                    "daira",
                 ),
             },
         ),
@@ -379,8 +379,8 @@ class OrderAdmin(ModelAdmin):
         self.message_user(request, f"{attached} order(s) got a code.")
 
 
-class BalladiaInline(TabularInline):
-    model = Balladia
+class DairaInline(TabularInline):
+    model = Daira
     extra = 1
     fields = ("name", "is_active")
     autocomplete_fields = ()
@@ -412,24 +412,24 @@ class RegionAdmin(ModelAdmin):
 
 @admin.register(Wilaya)
 class WilayaAdmin(ModelAdmin):
-    list_display = ("name", "region", "balladias_count", "is_active")
+    list_display = ("name", "region", "dairas_count", "is_active")
     list_filter = ("is_active", "region")
     search_fields = ("name", "region__name")
     autocomplete_fields = ("region",)
-    inlines = (BalladiaInline,)
+    inlines = (DairaInline,)
 
     def get_queryset(self, request):
         return super().get_queryset(request).annotate(
-            balladias_count=Count("balladias")
+            dairas_count=Count("dairas")
         )
 
-    @admin.display(ordering="balladias_count")
-    def balladias_count(self, obj):
-        return obj.balladias_count
+    @admin.display(ordering="dairas_count")
+    def dairas_count(self, obj):
+        return obj.dairas_count
 
 
-@admin.register(Balladia)
-class BalladiaAdmin(ModelAdmin):
+@admin.register(Daira)
+class DairaAdmin(ModelAdmin):
     list_display = ("name", "wilaya", "is_active")
     list_filter = ("is_active", "wilaya")
     search_fields = ("name", "wilaya__name")

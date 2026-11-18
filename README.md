@@ -181,17 +181,17 @@ The staff tick **Accepts referrals** on the accounts that are willing to receive
 - The customer sees their link and the table of what they earned on **/referrals**.
 - When a referred customer buys something, the referrer earns the percentage of the order: **what they owe is paid down first** and the rest goes to their balance. The earning is recorded as a `Transaction` of the kind *referral* and as a `Credit` row of the kind *referral*.
 
-## Regions, wilayas and balladias
+## Regions, wilayas and dairas
 
-The country is divided the way it is divided in Algeria: a **region** holds **wilayas**, and every wilaya holds its **balladias**.
+The country is divided the way it is divided in Algeria: a **region** holds **wilayas**, and every wilaya holds its **dairas**.
 
-- The staff create them in the admin (**Admin → Accounts → Regions**), with the wilayas of a region and the balladias of a wilaya as inlines.
-- The **sign-up form** asks for a wilaya and a balladia (two select boxes); the balladias follow the wilaya that was picked.
+- The staff create them in the admin (**Admin → Accounts → Regions**), with the wilayas of a region and the dairas of a wilaya as inlines.
+- The **sign-up form** asks for a wilaya and a daira (two select boxes); the dairas follow the wilaya that was picked.
 - The admin analytics page shows an **Owed by region** bar chart: what the free-spend customers of every region still owe the shop.
 
 | Method | Endpoint | Description |
 | --- | --- | --- |
-| GET | `/api/auth/regions/` | The regions with their wilayas and balladias |
+| GET | `/api/auth/regions/` | The regions with their wilayas and dairas |
 | GET | `/api/auth/referrals/` | The referral program of the customer: their code, their total and their earnings |
 
 ## Codes and simultaneous orders

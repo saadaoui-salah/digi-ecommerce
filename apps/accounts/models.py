@@ -40,7 +40,7 @@ class NotificationKind(models.TextChoices):
 class Region(models.Model):
     """A region of the country.
 
-    It holds the wilayas, and every wilaya holds its balladias — the way the
+    It holds the wilayas, and every wilaya holds its dairas — the way the
     country is divided.
     """
 
@@ -59,8 +59,14 @@ class Wilaya(models.Model):
     """A wilaya — a state — of a region."""
 
     name = models.CharField(max_length=100)
+    # Regions are optional: staff can group wilayas into regions later from
+    # the admin instead of having to do it before importing the geo data.
     region = models.ForeignKey(
-        Region, on_delete=models.PROTECT, related_name="wilayas"
+        Region,
+        on_delete=models.PROTECT,
+        related_name="wilayas",
+        null=True,
+        blank=True,
     )
     is_active = models.BooleanField(default=True)
 
@@ -77,21 +83,21 @@ class Wilaya(models.Model):
         return f"{self.name} — {self.region.name}"
 
 
-class Balladia(models.Model):
-    """A balladia — a province — of a wilaya."""
+class Daira(models.Model):
+    """A daira — a province — of a wilaya."""
 
     name = models.CharField(max_length=100)
     wilaya = models.ForeignKey(
-        Wilaya, on_delete=models.PROTECT, related_name="balladias"
+        Wilaya, on_delete=models.PROTECT, related_name="dairas"
     )
     is_active = models.BooleanField(default=True)
 
     class Meta:
         ordering = ("wilaya__name", "name")
-        verbose_name_plural = "balladias"
+        verbose_name_plural = "dairas"
         constraints = [
             models.UniqueConstraint(
-                fields=("wilaya", "name"), name="accounts_balladia_unique_per_wilaya"
+                fields=("wilaya", "name"), name="accounts_daira_unique_per_wilaya"
             )
         ]
 
@@ -223,13 +229,13 @@ class User(AbstractUser):
         related_name="customers",
         help_text="The wilaya the customer lives in.",
     )
-    balladia = models.ForeignKey(
-        Balladia,
+    daira = models.ForeignKey(
+        Daira,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name="customers",
-        help_text="The balladia the customer lives in.",
+        help_text="The daira the customer lives in.",
     )
 
     class Meta(AbstractUser.Meta):
