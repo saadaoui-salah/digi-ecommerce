@@ -2032,3 +2032,26 @@ class WilayaStringTests(APITestCase):
         wilaya = Wilaya.objects.create(name="Alger", region=region)
 
         self.assertEqual(str(wilaya), "Alger — Centre")
+
+
+class AdminUiTests(APITestCase):
+    def test_approval_fields_live_in_personal_info(self):
+        from apps.accounts.admin import UserAdmin
+
+        fieldsets = dict(UserAdmin.fieldsets)
+        personal = fieldsets["Personal info"]["fields"]
+
+        self.assertIn("is_approved", personal)
+        self.assertIn("approved_at", personal)
+        self.assertNotIn("Approval", fieldsets)
+
+    def test_admin_change_lists_include_the_row_click_script(self):
+        admin_user = User.objects.create_superuser(
+            username="admin-ui", email="admin-ui@example.com", password="pass"
+        )
+        self.client.force_login(admin_user)
+
+        response = self.client.get("/admin/accounts/user/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "window.location.assign(link.href)")
