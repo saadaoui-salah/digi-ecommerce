@@ -91,7 +91,6 @@ class CategoryAdmin(ActiveOnlyListMixin, ModelAdmin):
     fields = (
         "name",
         "parent",
-        "description",
         "image",
         "is_active",
         "sales_count",
@@ -131,7 +130,6 @@ class PackageInline(TabularInline):
         "type",
         "price",
         "stock",
-        "delivery_url",
         "sort_order",
         "is_active",
     )
@@ -360,6 +358,7 @@ class PackageAdmin(ActiveOnlyListMixin, ModelAdmin):
         "product",
         "group",
         "name",
+        "type",
         "price",
         "cost",
         "margin_display",
@@ -380,6 +379,7 @@ class PackageAdmin(ActiveOnlyListMixin, ModelAdmin):
         "total_revenue",
         "net_profit",
         "total_benefit",
+        "margin_display",
     )
     fieldsets = (
         (
@@ -401,7 +401,7 @@ class PackageAdmin(ActiveOnlyListMixin, ModelAdmin):
         (
             "Delivery",
             {
-                "fields": ("stock", "delivery_url", "sort_order", "is_active"),
+                "fields": ("stock", "sort_order", "is_active"),
             },
         ),
     )
@@ -419,6 +419,8 @@ class PackageAdmin(ActiveOnlyListMixin, ModelAdmin):
 
     @admin.display(description="Margin", ordering="price")
     def margin_display(self, obj):
+        if obj.cost is None:
+            return "—"
         return f"{obj.margin:.2f} DA"
 
     @admin.display(boolean=True)

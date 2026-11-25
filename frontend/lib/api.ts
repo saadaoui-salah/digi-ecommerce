@@ -27,7 +27,6 @@ export type Category = {
   id: number;
   name: string;
   slug: string;
-  description: string;
   parent: number | null;
   image: string | null;
   products_count: number;

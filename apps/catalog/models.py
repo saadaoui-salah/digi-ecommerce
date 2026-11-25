@@ -50,7 +50,6 @@ class Category(SlugModel):
         blank=True,
         related_name="children",
     )
-    description = models.TextField(blank=True)
     image = models.ImageField(upload_to="categories/", blank=True)
     is_active = models.BooleanField(default=True)
     # Counters of what the category sold. The order signals keep them up to
@@ -366,7 +365,6 @@ class Package(models.Model):
             "keep it up to date. Demand packages: how many can still be sold."
         ),
     )
-    delivery_url = models.URLField(max_length=500)
     is_active = models.BooleanField(default=True)
     sort_order = models.PositiveIntegerField(default=0)
     # Counters of what the package sold. The order signals keep them up to
@@ -431,6 +429,8 @@ class Package(models.Model):
     @property
     def margin(self):
         """What the store earns on one sale of this package."""
+        if self.price is None or self.cost is None:
+            return Decimal("0")
         return Decimal(self.price) - Decimal(self.cost)
 
     def save(self, *args, **kwargs):

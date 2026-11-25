@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
-  ArrowUpRight,
   Check,
   LockKeyhole,
   Package,
@@ -27,6 +26,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { useSession } from "@/components/use-session";
 import { ProductGridSkeleton } from "@/components/skeletons";
+import { WhatsAppIcon } from "@/components/whatsapp-icon";
 import {
   api,
   type Category,
@@ -277,13 +277,15 @@ export default function HomePage() {
                 </p>
               </div>
             </div>
-            <Link
-              href="/catalog"
+            <a
+              href="https://wa.me/213794909201"
+              target="_blank"
+              rel="noopener noreferrer"
               className="btn-animate group/btn inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-5 text-sm font-medium text-foreground hover:border-foreground/25 hover:bg-surface-muted"
             >
+              <WhatsAppIcon className="size-4" />
               {t("home.customCta")}
-              <ArrowUpRight className="size-4 transition-transform duration-200 group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5" />
-            </Link>
+            </a>
           </div>
         </section>
 
