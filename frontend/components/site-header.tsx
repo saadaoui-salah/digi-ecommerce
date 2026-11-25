@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { ArrowRight, Menu } from "lucide-react";
 
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { NotificationBell } from "@/components/notification-bell";
 import { SiteSidebar } from "@/components/site-sidebar";
 import { Logo } from "@/components/logo";
+import { ThemeToggle } from "@/components/theme-toggle";
 import type { User } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 
@@ -63,14 +65,18 @@ export function SiteHeader({
               <NotificationBell />
             </div>
           ) : (
-            <Link
-              href="/auth"
-              className="btn-animate group/btn inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
-            >
-              <span className="hidden sm:inline">{t("nav.createAccount")}</span>
-              <span className="sm:hidden">{t("nav.join")}</span>
-              <ArrowRight className="size-3.5 transition-transform duration-200 group-hover/btn:translate-x-0.5 rtl:rotate-180 rtl:group-hover/btn:-translate-x-0.5" />
-            </Link>
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <LanguageSwitcher compact className="w-20" />
+              <Link
+                href="/auth"
+                className="btn-animate group/btn inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+              >
+                <span className="hidden sm:inline">{t("nav.createAccount")}</span>
+                <span className="sm:hidden">{t("nav.join")}</span>
+                <ArrowRight className="size-3.5 transition-transform duration-200 group-hover/btn:translate-x-0.5 rtl:rotate-180 rtl:group-hover/btn:-translate-x-0.5" />
+              </Link>
+            </div>
           )}
         </div>
       </header>

@@ -1,0 +1,133 @@
+{% extends "admin/change_form.html" %}
+{% load i18n %}
+
+{% comment %}
+    Package groups and Packages are loaded as HTML fragments after the page
+    opens so the initial document stays small. The fragments contain the real
+    inline formsets, so saving still works. On validation errors Django
+    re-renders the page with bound formsets, so we fall back to normal rendering.
+{% endcomment %}
+
+{% block inline_field_sets %}
+    {% for inline_admin_formset in inline_admin_formsets %}
+        {% if original and not errors and not adminform.form.is_bound and inline_admin_formset.formset.prefix == "package_groups" %}
+            {% url 'admin:catalog_product_packagegroup_inline' original.pk as inline_url %}
+            {% include "admin/catalog/product/inline_skeleton.html" with label="Package groups" prefix="package_groups" columns="1234" rows="123" %}
+        {% elif original and not errors and not adminform.form.is_bound and inline_admin_formset.formset.prefix == "packages" %}
+            {% url 'admin:catalog_product_package_inline' original.pk as inline_url %}
+            {% include "admin/catalog/product/inline_skeleton.html" with label="Packages" prefix="packages" columns="123456789" rows="123" %}
+        {% else %}
+            {% include inline_admin_formset.opts.template %}
+        {% endif %}
+    {% endfor %}
+{% endblock %}
+
+{% block admin_change_form_document_ready %}
+    {{ block.super }}
+    <script>
+    (function () {
+        "use strict";
+
+        function initLoadMore(root, perPage) {
+            var rows = Array.prototype.slice.call(
+                root.querySelectorAll("tbody.form-group.original")
+            );
+            var shown = Math.min(perPage, rows.length);
+            var button = root.querySelector("[data-lazy-load-more]");
+
+            rows.forEach(function (row, index) {
+                if (index >= shown) row.style.display = "none";
+            });
+
+            if (!button) return;
+
+            function update() {
+                var left = rows.length - shown;
+                var label = button.querySelector("span:last-child");
+                if (left <= 0) {
+                    button.remove();
+                    return;
+                }
+                if (label) {
+                    label.textContent = "Load more (" + left + " left)";
+                }
+            }
+
+            button.addEventListener("click", function (event) {
+                event.preventDefault();
+                rows.slice(shown, shown + perPage).forEach(function (row) {
+                    row.style.display = "";
+                });
+                shown = Math.min(shown + perPage, rows.length);
+                update();
+            });
+
+            update();
+        }
+
+        function loadInline(skeleton) {
+            var url = skeleton.getAttribute("data-inline-url");
+            if (!url) return;
+
+            fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest" } })
+                .then(function (response) {
+                    if (!response.ok) throw new Error(String(response.status));
+                    return response.text();
+                })
+                .then(function (html) {
+                    var holder = document.createElement("div");
+                    holder.innerHTML = html.trim();
+                    var fragment = holder.firstElementChild;
+                    if (!fragment) throw new Error("Empty inline response");
+
+                    // Keep it hidden until the JS widgets are bound, otherwise
+                    // autocomplete fields flash as native selects.
+                    fragment.style.visibility = "hidden";
+                    skeleton.replaceWith(fragment);
+
+                    // Django binds Select2 on document-ready; these fields
+                    // arrived later, so bind them explicitly.
+                    if (window.django && window.django.jQuery &&
+                        window.django.jQuery.fn.djangoAdminSelect2) {
+                        window.django.jQuery(fragment)
+                            .find(".admin-autocomplete")
+                            .not("[name*=__prefix__]")
+                            .djangoAdminSelect2();
+                    }
+                    if (window.Alpine && window.Alpine.initTree) {
+                        window.Alpine.initTree(fragment);
+                    }
+                    var perPage = parseInt(
+                        fragment.getAttribute("data-per-page"), 10
+                    ) || 5;
+                    initLoadMore(fragment, perPage);
+                    fragment.style.visibility = "";
+                })
+                .catch(function () {
+                    skeleton.innerHTML =
+                        '<div class="border border-red-500 p-4 rounded-default flex items-center justify-between gap-3 bg-white dark:bg-base-900">' +
+                        "<span>Could not load this section.</span>" +
+                        '<button type="button" data-lazy-retry class="cursor-pointer underline">Retry</button>' +
+                        "</div>";
+                    skeleton.querySelector("[data-lazy-retry]").addEventListener(
+                        "click",
+                        function () { loadInline(skeleton); }
+                    );
+                });
+        }
+
+        function start() {
+            Array.prototype.forEach.call(
+                document.querySelectorAll("[data-lazy-skeleton]"),
+                loadInline
+            );
+        }
+
+        if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", start);
+        } else {
+            start();
+        }
+    })();
+    </script>
+{% endblock %}
