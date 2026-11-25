@@ -85,6 +85,12 @@ class UserAdmin(BaseUserAdmin, ModelAdmin):
                     "phone",
                     "wilaya",
                     "daira",
+                    "is_approved",
+                    "approved_at",
+                ),
+                "description": (
+                    "New accounts stay unapproved until a staff member "
+                    "approves them."
                 ),
             },
         ),
@@ -100,13 +106,6 @@ class UserAdmin(BaseUserAdmin, ModelAdmin):
             },
         ),
         ("Role", {"fields": ("is_sub_admin",)}),
-        (
-            "Approval",
-            {
-                "fields": ("is_approved", "approved_at"),
-                "description": "New accounts stay unapproved until a staff member approves them.",
-            },
-        ),
         (
             "Shop figures",
             {
