@@ -28,7 +28,8 @@ class AnalyticsProductSerializer(serializers.Serializer):
         return obj["product"].slug
 
     def get_category_name(self, obj):
-        return obj["product"].category.name
+        product = obj["product"]
+        return product.category.name if product.category_id else ""
 
 
 class AnalyticsBucketSerializer(serializers.Serializer):

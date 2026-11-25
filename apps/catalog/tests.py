@@ -512,3 +512,17 @@ class StockTests(TestCase):
 
         self.assertEqual(late.stock_worth, Decimal("100.00"))
         self.assertEqual(late.stock_quantity, 1)
+
+
+class CategoryDeletionTests(TestCase):
+    def test_deleting_a_category_keeps_its_products(self):
+        category = Category.objects.create(name="Bundles", slug="bundles")
+        product = Product.objects.create(
+            name="Temporary Pack", slug="temporary-pack", category=category
+        )
+
+        category.delete()
+        product.refresh_from_db()
+
+        self.assertIsNone(product.category_id)
+        self.assertTrue(Product.objects.filter(pk=product.pk).exists())
