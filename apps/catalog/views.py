@@ -57,7 +57,7 @@ class CategoryViewSet(SlugLookupMixin, viewsets.ReadOnlyModelViewSet):
     permission_classes = [permissions.AllowAny]
     filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
     filterset_class = CategoryFilter
-    search_fields = ("name", "description")
+    search_fields = ("name",)
     ordering_fields = ("name",)
 
     def get_queryset(self):

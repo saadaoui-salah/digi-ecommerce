@@ -34,7 +34,6 @@ class CatalogApiTests(APITestCase):
             name="Monthly",
             price="10.00",
             stock=5,
-            delivery_url="https://example.com/design-monthly",
         )
         # Instant packages are limited by their codes, not by a stock counter.
         PackageCode.objects.create(
@@ -46,14 +45,12 @@ class CatalogApiTests(APITestCase):
             price="50.00",
             stock=0,
             type=ItemType.DEMAND,
-            delivery_url="https://example.com/design-annual",
         )
         cls.inactive_package = Package.objects.create(
             product=cls.product,
             name="Legacy",
             price="5.00",
             stock=10,
-            delivery_url="https://example.com/design-legacy",
             is_active=False,
         )
         cls.unavailable_product = Product.objects.create(
@@ -66,7 +63,6 @@ class CatalogApiTests(APITestCase):
             name="Standard",
             price="20.00",
             stock=0,
-            delivery_url="https://example.com/sold-out",
         )
         cls.inactive_product = Product.objects.create(
             category=cls.child,
@@ -187,14 +183,12 @@ class CatalogApiTests(APITestCase):
             group=group,
             name="1 Month",
             price="9.99",
-            delivery_url="https://example.com/game-pass-us-1",
         )
         Package.objects.create(
             product=self.product,
             group=group,
             name="3 Months",
             price="26.99",
-            delivery_url="https://example.com/game-pass-us-3",
             is_active=False,
         )
 
@@ -394,7 +388,6 @@ class StockTests(TestCase):
             product=self.product,
             name="Monthly",
             price="100.00",
-            delivery_url="https://example.com/pro-pack",
         )
         self.demand_product = Product.objects.create(
             category=self.category,
@@ -408,7 +401,6 @@ class StockTests(TestCase):
             type=ItemType.DEMAND,
             price="500.00",
             stock=3,
-            delivery_url="https://example.com/pro-pack-annual",
         )
 
     def test_a_new_code_joins_the_stock(self):

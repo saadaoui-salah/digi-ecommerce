@@ -4,17 +4,14 @@ import { ArrowRight, LockKeyhole } from "lucide-react";
 import Link from "next/link";
 
 import { money } from "@/components/product-card";
-import {
-  SearchSelect,
-  type SearchSelectOption,
-} from "@/components/ui/search-select";
 import type { Package, PackageGroup } from "@/lib/api";
+import { cn } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n";
 
 /**
- * The package picker: two searchable dropdowns — one for the group (the
- * region) and one for the package itself (the duration). Both lists come from
- * the product detail response, so the whole page needs a single request.
+ * The package picker: the group stays on its own line, and the durations are
+ * small clickable boxes instead of a dropdown. Both lists come from the
+ * product detail response, so the whole page needs a single request.
  */
 export function PackagePicker({
   groups,
@@ -33,57 +30,37 @@ export function PackagePicker({
 }) {
   const { t } = useI18n();
 
-  const groupOptions: SearchSelectOption[] = groups.map((group) => ({
-    value: String(group.id),
-    label: group.name,
-    // The price belongs to the duration, so the region only says how many
-    // durations it holds.
-    hint: t("product.durationsCount", { count: group.packages.length }),
-  }));
-
-  // The durations of the chosen region — the search looks through them too,
-  // so the list never shows a duration of another country.
-  const scopedPackages: SearchSelectOption[] = packages
-    .filter(
-      (pkg) => selectedGroup === null || pkg.group === selectedGroup,
-    )
-    .map((pkg) => {
-      const group = groups.find((item) => item.id === pkg.group);
-      return {
-        value: String(pkg.id),
-        label: pkg.name,
-        hint: group ? group.name : undefined,
-        meta: money(pkg.price_current ?? pkg.price),
-        disabled: !pkg.is_available,
-      };
-    });
+  // The durations of the chosen region only — never another country's.
+  const scopedPackages = packages.filter(
+    (pkg) => selectedGroup === null || pkg.group === selectedGroup,
+  );
 
   return (
     <div className="space-y-3">
-      {groups.length > 0 && (
-        <SearchSelect
-          label={t("product.chooseRegion")}
-          placeholder={t("product.selectRegion")}
-          searchPlaceholder={t("product.searchRegion")}
-          emptyText={t("product.noRegionFound")}
-          value={selectedGroup === null ? null : String(selectedGroup)}
-          options={groupOptions}
-          onChange={(value) => onSelectGroup(Number(value))}
-        />
-      )}
-
-      <SearchSelect
-        label={t("product.chooseDuration")}
-        placeholder={t("product.selectDuration")}
-        searchPlaceholder={t("product.searchDuration")}
-        emptyText={t("product.noPackageFound")}
-        value={selectedPackage ? String(selectedPackage.id) : null}
-        options={scopedPackages}
-        onChange={(value) => {
-          const pkg = packages.find((item) => item.id === Number(value));
-          if (pkg) onSelectPackage(pkg);
-        }}
-      />
+      <div className="flex flex-wrap gap-2">
+        {scopedPackages.map((pkg) => {
+          const selected = selectedPackage?.id === pkg.id;
+          return (
+            <button
+              key={pkg.id}
+              type="button"
+              disabled={!pkg.is_available}
+              onClick={() => onSelectPackage(pkg)}
+              className={cn(
+                "btn-animate inline-flex min-w-20 flex-col items-start gap-0.5 rounded-lg border px-3 py-2 text-start text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+                selected
+                  ? "border-primary bg-primary/10 font-medium text-foreground"
+                  : "border-border bg-card text-muted-foreground hover:border-foreground/25 hover:text-foreground",
+              )}
+            >
+              <span className="truncate">{pkg.name}</span>
+              <span className="text-xs opacity-70">
+                {money(pkg.price_current ?? pkg.price)}
+              </span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -107,7 +84,7 @@ export function LockedPanel({ compact = false }: { compact?: boolean }) {
         <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
           <Link
             href="/auth"
-            className="btn-animate group/btn inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+            className="btn-animate group/btn inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
           >
             {t("home.signInCta")}
             <ArrowRight className="size-3.5 transition-transform duration-200 group-hover/btn:translate-x-0.5 rtl:rotate-180 rtl:group-hover/btn:-translate-x-0.5" />

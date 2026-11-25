@@ -105,11 +105,6 @@ export function CategoryClient({
               <h1 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
                 {state?.category?.name ?? slug}
               </h1>
-              {state?.category?.description && (
-                <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                  {state.category.description}
-                </p>
-              )}
               {state && !state.notFound && !state.error && (
                 <p className="mt-3 text-xs text-muted-foreground">
                   {t("category.count", { count: state.products.length })} ·{" "}

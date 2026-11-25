@@ -10,6 +10,7 @@ import {
   PackagePicker,
 } from "@/components/package-groups";
 import { CopyButton } from "@/components/copy-button";
+import { Markdown } from "@/components/markdown";
 import { ProductMedia } from "@/components/product-media";
 import { ProductDetailSkeleton } from "@/components/skeletons";import { money, ProductCard } from "@/components/product-card";
 import { SiteFooter } from "@/components/site-footer";
@@ -218,7 +219,7 @@ export function ProductClient({
       <SiteHeader user={user} onSignOut={signOut} />
 
       <main className="flex-1">
-        <section className="relative overflow-hidden border-b border-border">
+        <section className="relative border-b border-border">
           <div className="bg-grid pointer-events-none absolute inset-0" />
           <div className="relative mx-auto w-full max-w-6xl px-5 py-12 sm:px-8 lg:py-16">
             <nav
@@ -356,14 +357,14 @@ export function ProductClient({
                       <h2 className="text-[11px] font-medium tracking-[0.22em] text-muted-foreground uppercase">
                         {t("product.about")}
                       </h2>
-                      <p className="mt-3 whitespace-pre-line text-sm leading-7 text-muted-foreground">
-                        {product.description}
-                      </p>
+                      <div className="mt-3 text-sm leading-7 text-muted-foreground">
+                        <Markdown content={product.description} />
+                      </div>
                     </div>
                   )}
                 </div>
 
-                <aside className="lg:sticky lg:top-24 lg:self-start">
+                <aside className="lg:sticky lg:top-20 lg:self-start">
                   <div className="rounded-2xl border border-border bg-card p-5">
                     <div className="flex items-center gap-2">
                       <span className="grid size-8 place-items-center rounded-lg bg-sky-500/10 text-sky-600 ring-1 ring-sky-500/20 ring-inset dark:text-sky-300">
@@ -372,6 +373,28 @@ export function ProductClient({
                       <h2 className="text-base font-medium tracking-tight text-foreground">
                         {t("product.packages")}
                       </h2>
+                      {product.package_groups.length > 0 && (
+                        <select
+                          aria-label={t("product.chooseRegion")}
+                          value={
+                            selectedGroup === null ? "" : String(selectedGroup)
+                          }
+                          onChange={(event) =>
+                            handleSelectGroup(
+                              event.target.value
+                                ? Number(event.target.value)
+                                : null,
+                            )
+                          }
+                          className="ms-auto h-9 max-w-40 rounded-lg border border-border bg-card px-3 text-sm text-foreground outline-none focus:border-sky-500"
+                        >
+                          {product.package_groups.map((group) => (
+                            <option key={group.id} value={String(group.id)}>
+                              {group.name}
+                            </option>
+                          ))}
+                        </select>
+                      )}
                     </div>
 
                     <div className="mt-4">

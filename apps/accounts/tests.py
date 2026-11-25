@@ -543,7 +543,6 @@ class PackageCodeApiTests(APITestCase):
             name="1 Month",
             type=ItemType.IMMEDIATE,
             price=Decimal("25.00"),
-            delivery_url="https://example.com/delivery",
         )
         self.user = User.objects.create_user(
             username="alice",
@@ -633,7 +632,6 @@ class OrderApiTests(APITestCase):
             name="1 Month",
             type=ItemType.IMMEDIATE,
             price=Decimal("25.00"),
-            delivery_url="https://example.com/delivery",
         )
         self.user = User.objects.create_user(
             username="alice",
@@ -1210,7 +1208,6 @@ class OnDemandWorkflowTests(APITestCase):
             name="Full custom work",
             type=ItemType.DEMAND,
             price=Decimal("120.00"),
-            delivery_url="https://example.com/delivery",
         )
         self.customer = User.objects.create_user(
             username="alice",
@@ -1518,7 +1515,6 @@ class AdminTests(APITestCase):
             product=product,
             name="Full",
             price=Decimal("50.00"),
-            delivery_url="https://example.com/delivery",
         )
         customer = User.objects.create_user(
             username="alice", email="alice@example.com", password="admin-password"
@@ -1561,7 +1557,6 @@ class AdminTests(APITestCase):
             product=product,
             name="Full",
             price=Decimal("50.00"),
-            delivery_url="https://example.com/delivery",
         )
         customer = User.objects.create_user(
             username="alice", email="alice@example.com", password="admin-password"
@@ -1621,7 +1616,6 @@ class CouponTests(APITestCase):
             name="1 Month",
             type=ItemType.IMMEDIATE,
             price=Decimal("100.00"),
-            delivery_url="https://example.com/delivery",
         )
         self.user = User.objects.create_user(
             username="alice",
@@ -1731,7 +1725,6 @@ class ReferralTests(APITestCase):
             name="1 Month",
             type=ItemType.IMMEDIATE,
             price=Decimal("100.00"),
-            delivery_url="https://example.com/delivery",
         )
         self.referrer = User.objects.create_user(
             username="referrer",
@@ -1949,7 +1942,6 @@ class ConcurrentCodeTests(APITestCase):
             name="1 Month",
             type=ItemType.IMMEDIATE,
             price=Decimal("10.00"),
-            delivery_url="https://example.com/delivery",
         )
         self.code = PackageCode.objects.create(
             package=self.package, code="only@example.com|secret-pass"
