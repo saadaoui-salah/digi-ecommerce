@@ -11,7 +11,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
 SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-dev-only-change-me")
-DEBUG = os.getenv("DEBUG", "true").lower() == "true"
+# Safe by default: production must opt in explicitly, staging sets DEBUG=true
+# in its env file so errors stay visible there.
+DEBUG = os.getenv("DEBUG", "false").lower() == "true"
 ALLOWED_HOSTS = [
     host.strip()
     for host in os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
@@ -234,6 +236,28 @@ UNFOLD = {
                         "title": _("Order reports"),
                         "icon": "report",
                         "link": reverse_lazy("admin:accounts_orderreport_changelist"),
+                    },
+                ],
+            },
+            {
+                "title": _("Locations"),
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": _("Regions"),
+                        "icon": "public",
+                        "link": reverse_lazy("admin:accounts_region_changelist"),
+                    },
+                    {
+                        "title": _("Wilayas"),
+                        "icon": "location_city",
+                        "link": reverse_lazy("admin:accounts_wilaya_changelist"),
+                    },
+                    {
+                        "title": _("Dairas"),
+                        "icon": "map",
+                        "link": reverse_lazy("admin:accounts_daira_changelist"),
                     },
                 ],
             },

@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Clock, Loader2, RefreshCw } from "lucide-react";
+import { Clock, Loader2, MessageCircle, RefreshCw } from "lucide-react";
 
 import { LockedPanel } from "@/components/package-groups";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,15 @@ export function PendingApproval() {
       )}
 
       <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+        <a
+          href="https://wa.me/213794909201"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn-animate inline-flex h-10 items-center gap-2 rounded-lg bg-green-600 px-4 text-sm font-semibold text-white hover:bg-green-700"
+        >
+          <MessageCircle className="size-4" />
+          {t("approval.whatsapp")}
+        </a>
         <Button
           type="button"
           onClick={() => refresh()}

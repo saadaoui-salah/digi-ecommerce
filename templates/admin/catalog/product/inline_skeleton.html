@@ -1,0 +1,46 @@
+{% comment %}
+    Loading placeholder shaped like the real Unfold tabular inline: heading,
+    table header, editable-looking rows and the "Add another" footer.
+    `columns` and `rows` are strings; Django iterates them character by
+    character, so their length controls how many cells/rows are drawn.
+{% endcomment %}
+<div class="lazy-inline-skeleton mb-6 min-w-0 w-full" data-lazy-skeleton data-inline-url="{{ inline_url }}">
+    <h2 class="bg-base-100 flex flex-row font-semibold h-[38px] gap-1 items-center mb-4 px-3 rounded-default text-important dark:bg-white/[.02]"
+        id="{{ prefix }}-heading">
+        {{ label }}
+    </h2>
+
+    <div class="formset-wrapper border border-base-200 overflow-x-auto relative shadow-xs dark:border-base-800 rounded-default">
+        <table class="bg-white dark:bg-base-900 formset group/formset-parent w-full" id="{{ prefix }}-data">
+            <thead class="hidden relative lg:table-header-group">
+                <tr>
+                    {% for column in columns %}
+                        <th class="align-middle border-b border-base-200 dark:border-base-800 font-semibold px-1.5 first:pl-3 last:pr-3 py-2 text-left text-sm whitespace-nowrap">
+                            <div class="bg-base-200 dark:bg-base-800 h-3 rounded animate-pulse w-16"></div>
+                        </th>
+                    {% endfor %}
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for row in rows %}
+                    <tr class="form-row">
+                        {% for column in columns %}
+                            <td class="min-h-[62.5px] align-middle border-b border-base-200 dark:border-base-800 p-3 lg:py-3 px-1.5 first:pl-3 last:pr-3 text-left">
+                                <div class="bg-base-200 dark:bg-base-800 h-9 rounded animate-pulse w-full max-w-2xl"></div>
+                            </td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+
+            <tfoot class="form-actions">
+                <tr>
+                    <td colspan="100" class="border-t border-base-200 dark:border-base-800 p-3">
+                        <div class="bg-base-200 dark:bg-base-800 h-8 rounded animate-pulse w-44"></div>
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>

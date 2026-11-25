@@ -1,0 +1,206 @@
+{% extends "admin/change_form.html" %}
+{% load i18n %}
+
+{% block inline_field_sets %}
+    {% if original %}
+        {% url 'admin:accounts_region_dairas' original.pk as dairas_url %}
+        {% url 'admin:accounts_region_search_dairas' original.pk as search_url %}
+        {% url 'admin:accounts_region_add_daira' original.pk as add_url %}
+        {% url 'admin:accounts_region_remove_wilaya' original.pk as remove_url %}
+
+        <div class="mb-6"
+             data-region-picker
+             data-dairas-url="{{ dairas_url }}"
+             data-search-url="{{ search_url }}"
+             data-add-url="{{ add_url }}"
+             data-remove-url="{{ remove_url }}">
+            <h2 class="bg-base-100 flex flex-row font-semibold h-[38px] gap-1 items-center mb-4 px-3 rounded-default text-important dark:bg-white/[.02]">
+                {% translate "Wilayas and dairas" %}
+            </h2>
+
+            <div class="border border-base-200 dark:border-base-800 mb-4 p-4 rounded-default">
+                <label class="block font-medium mb-2 text-sm" for="region-daira-search">
+                    {% translate "Search dairas to add to this region" %}
+                </label>
+                <input type="search" id="region-daira-search" autocomplete="off"
+                       placeholder="{% translate 'Type a daira name…' %}"
+                       class="border border-base-200 bg-white font-medium min-w-20 placeholder-base-400 px-3 py-2 rounded-default shadow-xs text-font-default-light text-sm w-full focus:outline-2 focus:-outline-offset-2 focus:outline-primary-600 dark:bg-base-900 dark:border-base-700 dark:text-font-default-dark dark:scheme-dark">
+                <div data-region-results class="mt-3 flex flex-col gap-1"></div>
+            </div>
+
+            {% include "admin/accounts/region/dairas_skeleton.html" %}
+        </div>
+    {% else %}
+        <div class="bg-base-100 mb-6 p-4 rounded-default text-font-default-light dark:bg-white/[.02] dark:text-font-default-dark">
+            {% translate "Save the region first, then search dairas to attach its wilayas." %}
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block admin_change_form_document_ready %}
+    {{ block.super }}
+    <script>
+    (function () {
+        "use strict";
+
+        function csrfToken() {
+            var input = document.querySelector('[name="csrfmiddlewaretoken"]');
+            return input ? input.value : "";
+        }
+
+        function post(url, payload) {
+            var body = new URLSearchParams();
+            Object.keys(payload).forEach(function (key) {
+                body.append(key, payload[key]);
+            });
+            return fetch(url, {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": csrfToken(),
+                    "X-Requested-With": "XMLHttpRequest",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: body.toString()
+            }).then(function (response) {
+                if (!response.ok) throw new Error(String(response.status));
+                return response.json();
+            });
+        }
+
+        function initLoadMore(root, perPage) {
+            var rows = Array.prototype.slice.call(
+                root.querySelectorAll("tbody tr[data-daira-row]")
+            );
+            var shown = Math.min(perPage, rows.length);
+            var button = root.querySelector("[data-region-load-more]");
+
+            rows.forEach(function (row, index) {
+                if (index >= shown) row.style.display = "none";
+            });
+            if (!button) return;
+
+            function update() {
+                var left = rows.length - shown;
+                var label = button.querySelector("span:last-child");
+                if (left <= 0) { button.remove(); return; }
+                if (label) label.textContent = "Load more (" + left + " left)";
+            }
+            button.addEventListener("click", function (event) {
+                event.preventDefault();
+                rows.slice(shown, shown + perPage).forEach(function (row) {
+                    row.style.display = "";
+                });
+                shown = Math.min(shown + perPage, rows.length);
+                update();
+            });
+            update();
+        }
+
+        function start(picker) {
+            var dairasUrl = picker.getAttribute("data-dairas-url");
+            var searchUrl = picker.getAttribute("data-search-url");
+            var addUrl = picker.getAttribute("data-add-url");
+            var removeUrl = picker.getAttribute("data-remove-url");
+            var results = picker.querySelector("[data-region-results]");
+            var searchInput = picker.querySelector("#region-daira-search");
+
+            function loadDairas() {
+                return fetch(dairasUrl, {
+                    headers: { "X-Requested-With": "XMLHttpRequest" }
+                })
+                    .then(function (response) {
+                        if (!response.ok) throw new Error(String(response.status));
+                        return response.text();
+                    })
+                    .then(function (html) {
+                        var holder = document.createElement("div");
+                        holder.innerHTML = html.trim();
+                        var fragment = holder.firstElementChild;
+                        var skeleton = picker.querySelector("[data-region-skeleton], [data-region-dairas]");
+                        if (!fragment || !skeleton) return;
+                        skeleton.replaceWith(fragment);
+                        var perPage = parseInt(fragment.getAttribute("data-per-page"), 10) || 5;
+                        initLoadMore(fragment, perPage);
+                        fragment.addEventListener("click", function (event) {
+                            var remove = event.target.closest("[data-remove-wilaya]");
+                            if (!remove) return;
+                            event.preventDefault();
+                            remove.disabled = true;
+                            post(removeUrl, { wilaya_id: remove.getAttribute("data-remove-wilaya") })
+                                .then(loadDairas)
+                                .catch(function () { remove.disabled = false; });
+                        });
+                    })
+                    .catch(function () {
+                        var skeleton = picker.querySelector("[data-region-skeleton]");
+                        if (skeleton) {
+                            skeleton.innerHTML =
+                                '<div class="border border-red-500 p-4 rounded-default flex items-center justify-between gap-3 bg-white dark:bg-base-900">' +
+                                "<span>Could not load dairas.</span>" +
+                                '<button type="button" data-region-retry class="cursor-pointer underline">Retry</button></div>';
+                            skeleton.querySelector("[data-region-retry]").addEventListener("click", loadDairas);
+                        }
+                    });
+            }
+
+            var timer = null;
+            searchInput.addEventListener("input", function () {
+                var term = searchInput.value.trim();
+                clearTimeout(timer);
+                if (term.length < 2) { results.innerHTML = ""; return; }
+                timer = setTimeout(function () {
+                    fetch(searchUrl + "?q=" + encodeURIComponent(term), {
+                        headers: { "X-Requested-With": "XMLHttpRequest" }
+                    })
+                        .then(function (response) { return response.json(); })
+                        .then(function (data) {
+                            results.innerHTML = "";
+                            (data.results || []).forEach(function (item) {
+                                var button = document.createElement("button");
+                                button.type = "button";
+                                button.className =
+                                    "border border-base-200 cursor-pointer flex flex-col items-start px-3 py-2 rounded-default text-left text-sm hover:bg-base-50 dark:border-base-800 dark:hover:bg-base-800 dark:text-font-default-dark";
+                                button.innerHTML =
+                                    '<span class="font-medium text-font-default-light dark:text-font-default-dark">' +
+                                    item.name + "</span>" +
+                                    '<span class="text-base-400">' + item.wilaya +
+                                    (item.assigned ? " · " + "already added" : "") + "</span>";
+                                button.disabled = !!item.assigned;
+                                button.addEventListener("click", function () {
+                                    button.disabled = true;
+                                    post(addUrl, { daira_id: item.id })
+                                        .then(function () {
+                                            searchInput.value = "";
+                                            results.innerHTML = "";
+                                            return loadDairas();
+                                        })
+                                        .catch(function () { button.disabled = false; });
+                                });
+                                results.appendChild(button);
+                            });
+                            if (!(data.results || []).length) {
+                                results.innerHTML =
+                                    '<p class="text-base-400">No dairas found.</p>';
+                            }
+                        })
+                        .catch(function () { results.innerHTML = ""; });
+                }, 250);
+            });
+
+            loadDairas();
+        }
+
+        function ready() {
+            Array.prototype.forEach.call(
+                document.querySelectorAll("[data-region-picker]"),
+                start
+            );
+        }
+        if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", ready);
+        } else {
+            ready();
+        }
+    })();
+    </script>
+{% endblock %}

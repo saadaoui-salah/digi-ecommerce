@@ -1,0 +1,54 @@
+{% load i18n %}
+
+<div class="lazy-region-dairas mb-6 min-w-0 w-full" data-region-dairas data-per-page="{{ per_page }}">
+    <div class="formset-wrapper border border-base-200 overflow-x-auto relative shadow-xs dark:border-base-800 rounded-default">
+        <table class="bg-white dark:bg-base-900 formset w-full" id="region-dairas-data">
+            <thead class="hidden relative lg:table-header-group">
+                <tr>
+                    <th class="align-middle border-b border-base-200 dark:border-base-800 font-semibold px-1.5 first:pl-3 py-2 text-left text-sm whitespace-nowrap">{% translate "Wilaya" %}</th>
+                    <th class="align-middle border-b border-base-200 dark:border-base-800 font-semibold px-1.5 py-2 text-left text-sm whitespace-nowrap">{% translate "Daira" %}</th>
+                    <th class="align-middle border-b border-base-200 dark:border-base-800 font-semibold px-1.5 py-2 text-left text-sm whitespace-nowrap">{% translate "Active" %}</th>
+                    <th class="align-middle border-b border-base-200 dark:border-base-800 font-semibold px-1.5 last:pr-3 py-2 text-left text-sm whitespace-nowrap">{% translate "Actions" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                    <tr class="form-row" data-daira-row>
+                        <td class="align-middle border-b border-base-200 dark:border-base-800 font-medium p-3 lg:py-3 px-1.5 first:pl-3 text-left whitespace-nowrap">{{ row.wilaya.name }}</td>
+                        <td class="align-middle border-b border-base-200 dark:border-base-800 p-3 lg:py-3 px-1.5 text-left">{{ row.daira.name }}</td>
+                        <td class="align-middle border-b border-base-200 dark:border-base-800 p-3 lg:py-3 px-1.5 text-left">
+                            {% if row.daira.is_active %}
+                                <span class="material-symbols-outlined md-18 text-green-600 dark:text-green-500">check_circle</span>
+                            {% else %}
+                                <span class="material-symbols-outlined md-18 text-base-400">cancel</span>
+                            {% endif %}
+                        </td>
+                        <td class="align-middle border-b border-base-200 dark:border-base-800 p-3 lg:py-3 px-1.5 last:pr-3 text-left">
+                            <button type="button" data-remove-wilaya="{{ row.wilaya.id }}"
+                                    class="cursor-pointer flex h-[38px] w-[38px] items-center justify-center rounded-default transition-colors hover:bg-base-50 dark:hover:bg-base-800"
+                                    title="{% translate 'Remove this wilaya from the region' %}">
+                                <span class="material-symbols-outlined md-18 text-red-600 dark:text-red-500">delete</span>
+                            </button>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="4" class="p-6 text-center text-font-default-light dark:text-font-default-dark">
+                            {% translate "No dairas in this region yet. Search above to add one." %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="flex justify-center pt-3" data-region-more-slot>
+        {% if hidden_count %}
+            <button type="button" data-region-load-more
+                    class="border border-base-200 cursor-pointer flex gap-1.5 items-center px-4 py-2 rounded-default text-font-default-light transition-colors hover:bg-base-50 dark:border-base-800 dark:hover:bg-base-800 dark:text-font-default-dark">
+                <span class="material-symbols-outlined md-18">expand_more</span>
+                <span>{% blocktranslate count count=hidden_count %}Load more ({{ count }} left){% plural %}Load more ({{ count }} left){% endblocktranslate %}</span>
+            </button>
+        {% endif %}
+    </div>
+</div>
