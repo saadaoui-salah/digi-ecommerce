@@ -90,7 +90,8 @@ const en = {
   "approval.copy":
     "An admin has to approve your account before you can browse the catalog and place orders. You will get access as soon as it is approved.",
   "approval.checkAgain": "Check again",
-  "approval.whatsapp": "Reach out on WhatsApp",
+  "approval.whatsapp": "Contact us",
+  "approval.whatsappNumberLabel": "Or call / message us on WhatsApp:",
 
   "notifications.title": "Notifications",
   "notifications.empty": "No notifications yet.",
@@ -509,7 +510,8 @@ const fr = {
   "approval.copy":
     "Un administrateur doit approuver votre compte avant que vous puissiez parcourir le catalogue et passer des commandes. L'accès vous sera donné dès la validation.",
   "approval.checkAgain": "Vérifier à nouveau",
-  "approval.whatsapp": "Contactez-nous sur WhatsApp",
+  "approval.whatsapp": "Contactez-nous",
+  "approval.whatsappNumberLabel": "Ou appelez-nous / écrivez-nous sur WhatsApp :",
 
   "notifications.title": "Notifications",
   "notifications.empty": "Aucune notification.",
@@ -933,7 +935,8 @@ const ar = {
   "approval.copy":
     "يجب أن يوافق المشرف على حسابك قبل أن تتمكن من تصفح المتجر وإنشاء الطلبات. سيصلك الوصول فور الموافقة.",
   "approval.checkAgain": "تحقق مرة أخرى",
-  "approval.whatsapp": "تواصل معنا عبر واتساب",
+  "approval.whatsapp": "اتصل بنا",
+  "approval.whatsappNumberLabel": "أو اتصل / راسلنا عبر واتساب:",
 
   "notifications.title": "الإشعارات",
   "notifications.empty": "لا توجد إشعارات بعد.",

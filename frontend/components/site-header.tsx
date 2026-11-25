@@ -48,11 +48,17 @@ export function SiteHeader({
             <Logo />
           </div>
 
-          <nav className="hidden items-center gap-7 text-sm text-muted-foreground md:flex">
-            <Link href="/" className="transition-colors hover:text-foreground">
+          <nav className="hidden items-center gap-7 text-sm font-bold text-foreground md:flex">
+            <Link
+              href="/"
+              className="nav-underline relative transition-colors hover:text-primary"
+            >
               {t("common.home")}
             </Link>
-            <Link href="/catalog" className="transition-colors hover:text-foreground">
+            <Link
+              href="/catalog"
+              className="nav-underline relative transition-colors hover:text-primary"
+            >
               {t("nav.catalog")}
             </Link>
           </nav>
