@@ -1,7 +1,13 @@
 from decimal import Decimal
 
 from django.contrib import admin
+from django.contrib.admin import helpers
+from django.core.exceptions import PermissionDenied
 from django.db.models import Count, Min, Q
+from django.http import Http404, HttpResponse
+from django.shortcuts import get_object_or_404
+from django.template.loader import render_to_string
+from django.urls import path
 from django.utils.html import format_html, mark_safe
 from unfold.admin import ModelAdmin, TabularInline
 
@@ -194,6 +200,13 @@ class PromotionAdmin(ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(ModelAdmin):
+    # The package sections are heavy, so they are fetched as HTML fragments
+    # after the change form opens. The fragments are real inline formsets, so
+    # Save / Add another / Remove keep working exactly as before.
+    change_form_template = "admin/catalog/product/change_form.html"
+    lazy_inlines = (PackageGroup, Package)
+    lazy_inline_per_page = 5
+
     list_display = (
         "name",
         "type",
@@ -236,6 +249,61 @@ class ProductAdmin(ModelAdmin):
         # SQLite hands the smallest price back as a float, so it is written
         # out by hand: 27.99 and never 27.99000000000000.
         return f"{Decimal(value):.2f} DA"
+
+    # --- Lazy inline fragments ------------------------------------------------
+
+    def get_urls(self):
+        urls = super().get_urls()
+        lazy_urls = [
+            path(
+                "<int:object_id>/inline/packagegroup/",
+                self.admin_site.admin_view(self.packagegroup_inline),
+                name="catalog_product_packagegroup_inline",
+            ),
+            path(
+                "<int:object_id>/inline/package/",
+                self.admin_site.admin_view(self.package_inline),
+                name="catalog_product_package_inline",
+            ),
+        ]
+        return lazy_urls + urls
+
+    def packagegroup_inline(self, request, object_id):
+        return self._render_lazy_inline(request, object_id, PackageGroup)
+
+    def package_inline(self, request, object_id):
+        return self._render_lazy_inline(request, object_id, Package)
+
+    def _render_lazy_inline(self, request, object_id, model):
+        if request.method != "GET":
+            raise Http404
+        product = get_object_or_404(Product, pk=object_id)
+        if not self.has_change_permission(request, product):
+            raise PermissionDenied
+
+        # Build the formsets exactly as the change view does. An unbound
+        # formset on GET uses the product's related objects as initial data.
+        formsets, inline_instances = self._create_formsets(
+            request, product, change=True
+        )
+        wrappers = self.get_inline_formsets(
+            request, formsets, inline_instances, product
+        )
+        wrapper = next((w for w in wrappers if w.opts.model is model), None)
+        if wrapper is None:
+            raise Http404
+
+        total = len(wrapper.formset.initial_forms)
+        html = render_to_string(
+            "admin/catalog/product/inline_fragment.html",
+            {
+                "inline_admin_formset": wrapper,
+                "per_page": self.lazy_inline_per_page,
+                "hidden_count": max(0, total - self.lazy_inline_per_page),
+            },
+            request=request,
+        )
+        return HttpResponse(html)
 
 
 @admin.register(PackageGroup)

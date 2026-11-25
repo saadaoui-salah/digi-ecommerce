@@ -2,9 +2,12 @@ from django.contrib import admin
 from django.contrib import messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.db.models import Count
-from django.http import HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
+from django.shortcuts import get_object_or_404
+from django.template.loader import render_to_string
 from django.template.response import TemplateResponse
 from django.urls import path
+from django.core.exceptions import PermissionDenied
 from unfold.admin import ModelAdmin, TabularInline
 from unfold.forms import AdminPasswordChangeForm
 
@@ -395,12 +398,19 @@ class WilayaInline(TabularInline):
 
 @admin.register(Region)
 class RegionAdmin(ModelAdmin):
-    """The regions of the country and the wilayas they hold."""
+    """The regions of the country and the wilayas they hold.
+
+    Wilayas are attached by picking dairas in the search box: a daira's
+    wilaya gets this region as its FK. The current members are loaded as a
+    separate HTML fragment so a region with many dairas stays fast.
+    """
+
+    change_form_template = "admin/accounts/region/change_form.html"
+    dairas_per_page = 5
 
     list_display = ("name", "wilayas_count", "is_active")
     list_filter = ("is_active",)
     search_fields = ("name",)
-    inlines = (WilayaInline,)
 
     def get_queryset(self, request):
         return super().get_queryset(request).annotate(wilayas_count=Count("wilayas"))
@@ -408,6 +418,124 @@ class RegionAdmin(ModelAdmin):
     @admin.display(ordering="wilayas_count")
     def wilayas_count(self, obj):
         return obj.wilayas_count
+
+    # --- AJAX endpoints for the wilaya/daira picker ---------------------------
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom = [
+            path(
+                "<int:object_id>/dairas/",
+                self.admin_site.admin_view(self.dairas_view),
+                name="accounts_region_dairas",
+            ),
+            path(
+                "<int:object_id>/search-dairas/",
+                self.admin_site.admin_view(self.search_dairas),
+                name="accounts_region_search_dairas",
+            ),
+            path(
+                "<int:object_id>/add-daira/",
+                self.admin_site.admin_view(self.add_daira),
+                name="accounts_region_add_daira",
+            ),
+            path(
+                "<int:object_id>/remove-wilaya/",
+                self.admin_site.admin_view(self.remove_wilaya),
+                name="accounts_region_remove_wilaya",
+            ),
+        ]
+        return custom + urls
+
+    def _region(self, request, object_id):
+        region = get_object_or_404(Region, pk=object_id)
+        if not self.has_change_permission(request, region):
+            raise PermissionDenied
+        return region
+
+    def dairas_view(self, request, object_id):
+        if request.method != "GET":
+            raise PermissionDenied
+        region = self._region(request, object_id)
+
+        rows = []
+        wilayas = region.wilayas.prefetch_related("dairas").order_by("name")
+        for wilaya in wilayas:
+            for daira in wilaya.dairas.all():
+                rows.append({"wilaya": wilaya, "daira": daira})
+
+        html = render_to_string(
+            "admin/accounts/region/dairas_fragment.html",
+            {
+                "region": region,
+                "rows": rows,
+                "per_page": self.dairas_per_page,
+                "hidden_count": max(0, len(rows) - self.dairas_per_page),
+            },
+            request=request,
+        )
+        return HttpResponse(html)
+
+    def search_dairas(self, request, object_id):
+        if request.method != "GET":
+            raise PermissionDenied
+        region = self._region(request, object_id)
+        term = request.GET.get("q", "").strip()
+
+        results = []
+        if len(term) >= 2:
+            queryset = Daira.objects.filter(name__icontains=term).select_related(
+                "wilaya"
+            ).order_by("name")[:10]
+            for daira in queryset:
+                results.append(
+                    {
+                        "id": daira.id,
+                        "name": daira.name,
+                        "wilaya_id": daira.wilaya_id,
+                        "wilaya": daira.wilaya.name,
+                        "assigned": daira.wilaya.region_id == region.id,
+                    }
+                )
+        return JsonResponse({"results": results})
+
+    def add_daira(self, request, object_id):
+        if request.method != "POST":
+            raise PermissionDenied
+        region = self._region(request, object_id)
+        daira = get_object_or_404(Daira, pk=request.POST.get("daira_id"))
+        wilaya = daira.wilaya
+
+        already = wilaya.region_id == region.id
+        if not already:
+            wilaya.region = region
+            wilaya.save(update_fields=["region"])
+
+        self.message_user(
+            request,
+            (
+                f"{wilaya.name} is already in {region.name}."
+                if already
+                else f"Added {wilaya.name} to {region.name}."
+            ),
+            level=messages.INFO,
+        )
+        return JsonResponse({"ok": True, "already": already, "wilaya": wilaya.name})
+
+    def remove_wilaya(self, request, object_id):
+        if request.method != "POST":
+            raise PermissionDenied
+        region = self._region(request, object_id)
+        wilaya = get_object_or_404(
+            Wilaya, pk=request.POST.get("wilaya_id"), region=region
+        )
+        wilaya.region = None
+        wilaya.save(update_fields=["region"])
+
+        self.message_user(
+            request, f"Removed {wilaya.name} from {region.name}.", level=messages.INFO
+        )
+        return JsonResponse({"ok": True})
 
 
 @admin.register(Wilaya)

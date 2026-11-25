@@ -186,10 +186,11 @@ export default function AuthPage() {
     };
   }, [signup.wilaya]);
 
-  // The shared session already fetched /me/ once on page load.
+  // The shared session already fetched /me/ once on page load. While the form
+  // is showing its success state, let its own timer choose the destination.
   useEffect(() => {
-    if (user && !checkingSession) router.replace("/");
-  }, [user, checkingSession, router]);
+    if (user && !checkingSession && status !== "done") router.replace("/");
+  }, [user, checkingSession, router, status]);
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -287,7 +288,7 @@ export default function AuthPage() {
       await refresh();
       setStatus("done");
       notify(t("auth.accountCreatedToast"));
-      setTimeout(() => router.replace("/"), 700);
+      setTimeout(() => router.replace("/catalog"), 700);
     } catch (signupError) {
       setStatus("idle");
       setPending(false);

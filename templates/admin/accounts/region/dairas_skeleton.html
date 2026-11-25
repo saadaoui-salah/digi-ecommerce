@@ -1,0 +1,27 @@
+{% comment %} Loading placeholders shaped like the real daira rows. {% endcomment %}
+<div class="lazy-region-skeleton mb-6 min-w-0 w-full" data-region-skeleton>
+    <div class="formset-wrapper border border-base-200 overflow-x-auto relative shadow-xs dark:border-base-800 rounded-default">
+        <table class="bg-white dark:bg-base-900 formset w-full">
+            <thead class="hidden relative lg:table-header-group">
+                <tr>
+                    {% for column in "1234" %}
+                        <th class="align-middle border-b border-base-200 dark:border-base-800 px-1.5 first:pl-3 py-2 text-left">
+                            <div class="bg-base-200 dark:bg-base-800 h-3 rounded animate-pulse w-16"></div>
+                        </th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in "123" %}
+                    <tr class="form-row">
+                        {% for column in "1234" %}
+                            <td class="align-middle border-b border-base-200 dark:border-base-800 p-3 lg:py-3 px-1.5 first:pl-3 text-left">
+                                <div class="bg-base-200 dark:bg-base-800 h-8 rounded animate-pulse w-full max-w-2xl"></div>
+                            </td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>

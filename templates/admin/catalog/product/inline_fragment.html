@@ -1,0 +1,15 @@
+{% load i18n %}
+
+<div class="lazy-inline mb-6 min-w-0 w-full" data-lazy-inline data-per-page="{{ per_page }}">
+    {% include inline_admin_formset.opts.template %}
+
+    <div class="lazy-inline-more flex justify-center pt-3" data-lazy-more-slot>
+        {% if hidden_count %}
+            <button type="button" data-lazy-load-more
+                    class="border border-base-200 cursor-pointer flex gap-1.5 items-center px-4 py-2 rounded-default text-font-default-light transition-colors hover:bg-base-50 dark:border-base-800 dark:hover:bg-base-800 dark:text-font-default-dark">
+                <span class="material-symbols-outlined md-18">expand_more</span>
+                <span>{% blocktranslate count count=hidden_count %}Load more ({{ count }} left){% plural %}Load more ({{ count }} left){% endblocktranslate %}</span>
+            </button>
+        {% endif %}
+    </div>
+</div>
