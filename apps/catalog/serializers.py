@@ -155,8 +155,8 @@ class PackageGroupSerializer(serializers.ModelSerializer):
 
 
 class ProductSerializer(serializers.ModelSerializer):
-    category_name = serializers.CharField(source="category.name", read_only=True)
-    category_slug = serializers.CharField(source="category.slug", read_only=True)
+    category_name = serializers.SerializerMethodField()
+    category_slug = serializers.SerializerMethodField()
     price_from = serializers.DecimalField(
         max_digits=10, decimal_places=2, read_only=True
     )
@@ -174,6 +174,12 @@ class ProductSerializer(serializers.ModelSerializer):
         max_digits=14, decimal_places=2, read_only=True
     )
     pending_demand_orders = serializers.IntegerField(read_only=True)
+
+    def get_category_name(self, obj):
+        return obj.category.name if obj.category_id else ""
+
+    def get_category_slug(self, obj):
+        return obj.category.slug if obj.category_id else ""
 
     class Meta:
         model = Product

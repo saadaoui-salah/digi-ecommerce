@@ -226,7 +226,7 @@ def create_order(*, user, package, product, group=None, code=None, price=None, b
         code=code,
         product_name=product.name,
         product_slug=product.slug,
-        category_name=product.category.name,
+        category_name=product.category.name if product.category_id else "",
         package_name=package.name,
         group_name=group.name if group else "",
         price=price,
