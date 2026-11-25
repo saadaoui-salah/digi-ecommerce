@@ -95,7 +95,12 @@ class Category(SlugModel):
 
 class Product(SlugModel):
     category = models.ForeignKey(
-        Category, on_delete=models.PROTECT, related_name="products"
+        Category,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="products",
+        help_text="Optional: deleting a category leaves its products in the store.",
     )
     name = models.CharField(max_length=200)
     type = models.CharField(
