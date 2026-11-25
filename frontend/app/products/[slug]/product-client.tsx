@@ -15,6 +15,7 @@ import { ProductMedia } from "@/components/product-media";
 import { ProductDetailSkeleton } from "@/components/skeletons";import { money, ProductCard } from "@/components/product-card";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { StyledSelect } from "@/components/ui/styled-select";
 import { SuccessCheck } from "@/components/success-check";
 import { useToast } from "@/components/toast";
 import { useSession } from "@/components/use-session";
@@ -374,26 +375,22 @@ export function ProductClient({
                         {t("product.packages")}
                       </h2>
                       {product.package_groups.length > 0 && (
-                        <select
-                          aria-label={t("product.chooseRegion")}
+                        <StyledSelect
+                          label={t("product.chooseRegion")}
                           value={
-                            selectedGroup === null ? "" : String(selectedGroup)
+                            selectedGroup === null
+                              ? String(product.package_groups[0].id)
+                              : String(selectedGroup)
                           }
-                          onChange={(event) =>
-                            handleSelectGroup(
-                              event.target.value
-                                ? Number(event.target.value)
-                                : null,
-                            )
+                          options={product.package_groups.map((group) => ({
+                            value: String(group.id),
+                            label: group.name,
+                          }))}
+                          onChange={(value) =>
+                            handleSelectGroup(Number(value))
                           }
-                          className="ms-auto h-9 max-w-40 rounded-lg border border-border bg-card px-3 text-sm text-foreground outline-none focus:border-sky-500"
-                        >
-                          {product.package_groups.map((group) => (
-                            <option key={group.id} value={String(group.id)}>
-                              {group.name}
-                            </option>
-                          ))}
-                        </select>
+                          className="ms-auto w-44 sm:w-52"
+                        />
                       )}
                     </div>
 
