@@ -107,7 +107,7 @@ const en = {
   "home.title2": "Ready when you are.",
   "home.copy":
     "Templates, tools, and custom digital work — all in one place. Buy instantly and get access in seconds, or request something built just for you.",
-  "home.browseCatalog": "Browse the catalog",
+  "home.browseCatalog": "Browse the store",
   "home.createAccount": "Create free account",
   "home.perkFree": "Free to join",
   "home.perkNoSubs": "No subscriptions",
@@ -189,7 +189,7 @@ const en = {
   "home.ctaButton": "Create free account",
   "home.ctaCopySignedIn":
     "Browse the full catalog and order what you need next — your account is ready.",
-  "home.ctaButtonSignedIn": "Browse the catalog",
+  "home.ctaButtonSignedIn": "Browse the store",
 
   "footer.tagline": "Digital products, delivered instantly.",
   "footer.account": "Account",
@@ -526,7 +526,7 @@ const fr = {
   "home.title2": "Prêt quand vous l'êtes.",
   "home.copy":
     "Modèles, outils et créations numériques sur mesure — au même endroit. Achetez instantanément et accédez en quelques secondes, ou demandez une création rien que pour vous.",
-  "home.browseCatalog": "Parcourir le catalogue",
+  "home.browseCatalog": "Parcourir la boutique",
   "home.createAccount": "Créer un compte gratuit",
   "home.perkFree": "Inscription gratuite",
   "home.perkNoSubs": "Sans abonnement",
@@ -609,7 +609,7 @@ const fr = {
   "home.ctaButton": "Créer un compte gratuit",
   "home.ctaCopySignedIn":
     "Parcourez tout le catalogue et commandez ce qu'il vous faut — votre compte est prêt.",
-  "home.ctaButtonSignedIn": "Parcourir le catalogue",
+  "home.ctaButtonSignedIn": "Parcourir la boutique",
 
   "footer.tagline": "Produits numériques, livrés instantanément.",
   "footer.account": "Compte",
@@ -1030,7 +1030,7 @@ const ar = {
   "home.ctaButton": "أنشئ حسابًا مجانيًا",
   "home.ctaCopySignedIn":
     "تصفح الكتالوج كاملًا واطلب ما تحتاجه — حسابك جاهز.",
-  "home.ctaButtonSignedIn": "تصفح الكتالوج",
+  "home.ctaButtonSignedIn": "تصفح المتجر",
 
   "footer.tagline": "منتجات رقمية تُسلّم فورًا.",
   "footer.account": "الحساب",
