@@ -80,6 +80,9 @@ class Wilaya(models.Model):
         ]
 
     def __str__(self):
+        # Regions are optional — an imported wilaya can still be ungrouped.
+        if self.region_id is None:
+            return self.name
         return f"{self.name} — {self.region.name}"
 
 

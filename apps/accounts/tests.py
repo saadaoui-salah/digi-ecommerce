@@ -2019,3 +2019,16 @@ class ConcurrentCodeTests(APITestCase):
         self.package.refresh_from_db()
         self.assertEqual(self.package.stock, 0)
         self.assertEqual(self.package.codes_available, 0)
+
+
+class WilayaStringTests(APITestCase):
+    def test_an_ungrouped_wilaya_renders_its_name(self):
+        wilaya = Wilaya.objects.create(name="Alger")
+
+        self.assertEqual(str(wilaya), "Alger")
+
+    def test_a_grouped_wilaya_renders_its_name_and_region(self):
+        region = Region.objects.create(name="Centre")
+        wilaya = Wilaya.objects.create(name="Alger", region=region)
+
+        self.assertEqual(str(wilaya), "Alger — Centre")
