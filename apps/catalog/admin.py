@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from django.contrib import admin
 from django.contrib.admin import helpers
+from django.contrib.admin.views.main import ChangeList
 from django.core.exceptions import PermissionDenied
 from django.db.models import Count, Min, Q
 from django.http import Http404, HttpResponse
@@ -53,8 +54,26 @@ def copy_button(value):
     )
 
 
+class ActiveOnlyChangeList(ChangeList):
+    """Show active rows unless the staff member explicitly filters otherwise."""
+
+    def __init__(self, request, *args, **kwargs):
+        if "is_active__exact" not in request.GET:
+            params = request.GET.copy()
+            params["is_active__exact"] = "1"
+            request.GET = params
+        super().__init__(request, *args, **kwargs)
+
+
+class ActiveOnlyListMixin:
+    """Default the changelist of an is_active model to active rows only."""
+
+    def get_changelist(self, request, **kwargs):
+        return ActiveOnlyChangeList
+
+
 @admin.register(Category)
-class CategoryAdmin(ModelAdmin):
+class CategoryAdmin(ActiveOnlyListMixin, ModelAdmin):
     list_display = (
         "name",
         "slug",
@@ -199,7 +218,7 @@ class PromotionAdmin(ModelAdmin):
 
 
 @admin.register(Product)
-class ProductAdmin(ModelAdmin):
+class ProductAdmin(ActiveOnlyListMixin, ModelAdmin):
     # The package sections are heavy, so they are fetched as HTML fragments
     # after the change form opens. The fragments are real inline formsets, so
     # Save / Add another / Remove keep working exactly as before.
@@ -215,6 +234,7 @@ class ProductAdmin(ModelAdmin):
         "sales_count",
         "total_revenue",
         "net_profit",
+        "is_active",
         "created_at",
     )
     list_filter = ("is_active", "type", "requires_info", "category")
@@ -307,7 +327,7 @@ class ProductAdmin(ModelAdmin):
 
 
 @admin.register(PackageGroup)
-class PackageGroupAdmin(ModelAdmin):
+class PackageGroupAdmin(ActiveOnlyListMixin, ModelAdmin):
     list_display = ("product", "name", "packages_count", "is_active")
     list_filter = ("is_active", "product__category")
     search_fields = ("name", "product__name")
@@ -335,7 +355,7 @@ class PackageCodeInline(TabularInline):
 
 
 @admin.register(Package)
-class PackageAdmin(ModelAdmin):
+class PackageAdmin(ActiveOnlyListMixin, ModelAdmin):
     list_display = (
         "product",
         "group",
@@ -349,6 +369,7 @@ class PackageAdmin(ModelAdmin):
         "stock_display",
         "stock_worth_display",
         "codes_left",
+        "is_active",
     )
     list_filter = ("is_active", "type", "product__category")
     search_fields = ("name", "product__name")
