@@ -27,7 +27,7 @@ class CategoryFilter(FilterSet):
 class ProductFilter(FilterSet):
     category = NumberFilter(method="filter_category")
     category_slug = CharFilter(method="filter_category_slug")
-    type = ChoiceFilter(choices=ItemType.choices)
+    type = ChoiceFilter(choices=ItemType.choices, method="filter_type")
     available = BooleanFilter(field_name="is_available")
     promoted = BooleanFilter(method="filter_promoted")
     min_price = NumberFilter(field_name="price_from", lookup_expr="gte")
@@ -43,6 +43,10 @@ class ProductFilter(FilterSet):
                 "pk", flat=True
             )
         )
+
+    def filter_type(self, queryset, name, value):
+        # The type lives on packages; ProductViewSet annotates the first one.
+        return queryset.filter(package_type=value)
 
     def filter_category(self, queryset, name, value):
         return queryset.filter(category_id__in=self._category_ids(value))

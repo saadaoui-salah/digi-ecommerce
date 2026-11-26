@@ -536,7 +536,6 @@ class PackageCodeApiTests(APITestCase):
             name="Code Game Pass",
             slug="code-game-pass",
             category=self.category,
-            type=ItemType.IMMEDIATE,
         )
         self.package = Package.objects.create(
             product=self.product,
@@ -625,7 +624,6 @@ class OrderApiTests(APITestCase):
             name="Order Game Pass",
             slug="order-game-pass",
             category=self.category,
-            type=ItemType.IMMEDIATE,
         )
         self.package = Package.objects.create(
             product=self.product,
@@ -1201,7 +1199,6 @@ class OnDemandWorkflowTests(APITestCase):
             name="Custom Artwork",
             slug="custom-artwork-demand",
             category=self.category,
-            type=ItemType.DEMAND,
         )
         self.package = Package.objects.create(
             product=self.product,
@@ -1251,8 +1248,8 @@ class OnDemandWorkflowTests(APITestCase):
         )
 
     def test_a_product_can_require_buyer_info(self):
-        self.product.requires_info = True
-        self.product.save(update_fields=["requires_info"])
+        self.package.requires_info = True
+        self.package.save(update_fields=["requires_info"])
         self.client.post(
             "/api/auth/token/",
             {"email": "alice@example.com", "password": "strong-password-123"},
@@ -1285,8 +1282,6 @@ class OnDemandWorkflowTests(APITestCase):
             name="Instant Top-up",
             slug="instant-topup-demand-test",
             category=self.category,
-            type=ItemType.IMMEDIATE,
-            requires_info=True,
         )
         instant_package = Package.objects.create(
             product=instant_product,
@@ -1509,7 +1504,6 @@ class AdminTests(APITestCase):
             name="Custom Work",
             slug="custom-work-board",
             category=category,
-            type=ItemType.DEMAND,
         )
         package = Package.objects.create(
             product=product,
@@ -1551,7 +1545,6 @@ class AdminTests(APITestCase):
             name="Custom Work",
             slug="custom-work-admin",
             category=category,
-            type=ItemType.DEMAND,
         )
         package = Package.objects.create(
             product=product,
@@ -1609,7 +1602,6 @@ class CouponTests(APITestCase):
             name="Coupon Game Pass",
             slug="coupon-game-pass",
             category=self.category,
-            type=ItemType.IMMEDIATE,
         )
         self.package = Package.objects.create(
             product=self.product,
@@ -1718,7 +1710,6 @@ class ReferralTests(APITestCase):
             name="Referral Game Pass",
             slug="referral-game-pass",
             category=self.category,
-            type=ItemType.IMMEDIATE,
         )
         self.package = Package.objects.create(
             product=self.product,
@@ -1935,7 +1926,6 @@ class ConcurrentCodeTests(APITestCase):
             name="Race Pass",
             slug="race-pass",
             category=self.category,
-            type=ItemType.IMMEDIATE,
         )
         self.package = Package.objects.create(
             product=self.product,

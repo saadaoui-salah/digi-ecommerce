@@ -195,8 +195,6 @@ class AnalyticsCountersTests(TestCase):
         self.assertEqual(order.sold_price, Decimal("150.00"))
 
     def test_a_demand_order_counts_as_pending_until_it_is_delivered(self):
-        self.product.type = ItemType.DEMAND
-        self.product.save(update_fields=["type"])
         self.package.type = ItemType.DEMAND
         self.package.save(update_fields=["type"])
 

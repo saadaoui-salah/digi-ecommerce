@@ -37,7 +37,7 @@ export function PackagePicker({
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-col gap-2">
         {scopedPackages.map((pkg) => {
           const selected = selectedPackage?.id === pkg.id;
           return (
@@ -47,16 +47,32 @@ export function PackagePicker({
               disabled={!pkg.is_available}
               onClick={() => onSelectPackage(pkg)}
               className={cn(
-                "btn-animate inline-flex min-w-20 flex-col items-start gap-0.5 rounded-lg border px-3 py-2 text-start text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+                "btn-animate flex w-full flex-col items-start gap-0.5 rounded-lg border px-3 py-2.5 text-start text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50",
                 selected
                   ? "border-primary bg-primary/10 font-medium text-foreground"
                   : "border-border bg-card text-muted-foreground hover:border-foreground/25 hover:text-foreground",
               )}
             >
-              <span className="truncate">{pkg.name}</span>
+              <span className="flex w-full items-center justify-between gap-2">
+                <span className="truncate">{pkg.name}</span>
+                {pkg.type === "demand" && (
+                  <span className="shrink-0 rounded-md bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-300">
+                    In demand
+                  </span>
+                )}
+              </span>
               <span className="text-xs opacity-70">
                 {money(pkg.price_current ?? pkg.price)}
               </span>
+              {(pkg.type === "immediate" ? pkg.codes_available : pkg.stock) !==
+                null && (
+                <span className="text-xs font-medium text-orange-600 dark:text-orange-400">
+                  stock:{" "}
+                  {pkg.type === "immediate"
+                    ? pkg.codes_available
+                    : pkg.stock}
+                </span>
+              )}
             </button>
           );
         })}

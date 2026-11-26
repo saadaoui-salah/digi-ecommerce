@@ -109,6 +109,7 @@ class PackageSerializer(serializers.ModelSerializer):
             "stock",
             "is_available",
             "codes_available",
+            "requires_info",
             "sort_order",
             "sales_count",
             "total_revenue",
@@ -158,6 +159,12 @@ class ProductSerializer(serializers.ModelSerializer):
     category_slug = serializers.SerializerMethodField()
     price_from = serializers.DecimalField(
         max_digits=10, decimal_places=2, read_only=True
+    )
+    # The type and info flag belong to the packages now; the product just
+    # exposes the first package's values so the storefront keeps working.
+    type = serializers.CharField(source="package_type", read_only=True)
+    requires_info = serializers.BooleanField(
+        source="package_requires_info", read_only=True
     )
     price_current = serializers.SerializerMethodField()
     promotion = serializers.SerializerMethodField()

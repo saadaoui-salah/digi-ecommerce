@@ -51,10 +51,11 @@ export function ProductClient({
   const [state, setState] = useState<ProductState | null>(null);
   const [selected, setSelected] = useState<PackageType | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<number | null>(null);
+  const [quantity, setQuantity] = useState(1);
   const [buying, setBuying] = useState(false);
   const [buyDone, setBuyDone] = useState(false);
   const [buyError, setBuyError] = useState("");
-  const [delivered, setDelivered] = useState<PackageCode | null>(null);
+  const [delivered, setDelivered] = useState<PackageCode[]>([]);
   const [infoOpen, setInfoOpen] = useState(false);
   const [buyerInfo, setBuyerInfo] = useState("");
   const [infoError, setInfoError] = useState("");
@@ -102,7 +103,9 @@ export function ProductClient({
   }, [user, slug]);
 
   const product = state?.product ?? null;
-  const isInstant = product?.type === "immediate";
+  const isInstant = selected
+    ? selected.type === "immediate"
+    : (product?.packages.some((pkg) => pkg.type === "immediate") ?? false);
 
   // The coupon of the customer and the price they pay with it.
   const coupon = product?.coupon ?? null;
@@ -145,21 +148,15 @@ export function ProductClient({
             method: "POST",
             body: JSON.stringify({
               package: selected.id,
+              quantity,
               ...(info ? { buyer_info: info } : {}),
             }),
           },
         );
-        setDelivered(
-          order.code_value
-            ? {
-                id: order.id,
-                package: order.package ?? 0,
-                email: order.code_value.split("|", 1)[0] ?? "",
-                password: order.code_value.split("|").slice(1).join("|"),
-                claimed_at: order.created_at,
-              }
-            : null,
-        );
+        // Every claimed code belongs to the customer, so show them all —
+        // a bulk order delivers one code per requested quantity.
+        const claimed = await api<PackageCode[]>("/auth/codes/");
+        setDelivered(claimed);
         setBuyDone(true);
         notify(t("product.orderPlaced"), "success");
         setTimeout(() => setBuyDone(false), 2500);
@@ -191,7 +188,7 @@ export function ProductClient({
     if (!product || !selected) return;
 
     // On-demand products flagged by the admin ask for extra details first.
-    if (product.requires_info && product.type === "demand") {
+    if (selected?.requires_info && selected.type === "demand") {
       setInfoError("");
       setInfoOpen(true);
       return;
@@ -413,6 +410,21 @@ export function ProductClient({
                     </div>
 
                     <div className="mt-5 border-t border-border pt-4">
+                      <label className="mb-3 flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                        <span>{t("product.quantity")}</span>
+                        <input
+                          type="number"
+                          min={1}
+                          max={100}
+                          value={quantity}
+                          onChange={(event) =>
+                            setQuantity(
+                              Math.max(1, Number(event.target.value) || 1),
+                            )
+                          }
+                          className="h-9 w-20 rounded-lg border border-border bg-card px-3 text-sm text-foreground outline-none focus:border-sky-500"
+                        />
+                      </label>
                       {selected ? (
                         <div className="flex items-center justify-between gap-3">
                           <div className="min-w-0">
@@ -503,35 +515,39 @@ export function ProductClient({
                         </p>
                       )}
 
-                      {delivered && (
+                      {delivered.length > 0 && (
                         <div className="mt-3 rounded-xl border border-emerald-500/25 bg-emerald-500/5 p-4">
                           <p className="text-[11px] font-medium tracking-[0.18em] text-emerald-700 uppercase dark:text-emerald-300">
                             {t("product.yourCode")}
                           </p>
-                          <dl className="mt-3 space-y-2">
-                            <div className="flex items-center justify-between gap-3">
-                              <dt className="text-xs text-muted-foreground">
-                                {t("product.codeEmail")}
-                              </dt>
-                              <dd className="flex items-center gap-2">
-                                <span className="truncate font-mono text-xs font-medium text-foreground">
-                                  {delivered.email}
-                                </span>
-                                <CopyButton value={delivered.email} />
-                              </dd>
-                            </div>
-                            <div className="flex items-center justify-between gap-3">
-                              <dt className="text-xs text-muted-foreground">
-                                {t("product.codePassword")}
-                              </dt>
-                              <dd className="flex items-center gap-2">
-                                <span className="truncate font-mono text-xs font-medium text-foreground">
-                                  {delivered.password}
-                                </span>
-                                <CopyButton value={delivered.password} />
-                              </dd>
-                            </div>
-                          </dl>
+                          <div className="mt-3 space-y-3">
+                            {delivered.map((code) => (
+                              <dl key={code.id} className="space-y-2">
+                                <div className="flex items-center justify-between gap-3">
+                                  <dt className="text-xs text-muted-foreground">
+                                    {t("product.codeEmail")}
+                                  </dt>
+                                  <dd className="flex items-center gap-2">
+                                    <span className="truncate font-mono text-xs font-medium text-foreground">
+                                      {code.email}
+                                    </span>
+                                    <CopyButton value={code.email} />
+                                  </dd>
+                                </div>
+                                <div className="flex items-center justify-between gap-3">
+                                  <dt className="text-xs text-muted-foreground">
+                                    {t("product.codePassword")}
+                                  </dt>
+                                  <dd className="flex items-center gap-2">
+                                    <span className="truncate font-mono text-xs font-medium text-foreground">
+                                      {code.password}
+                                    </span>
+                                    <CopyButton value={code.password} />
+                                  </dd>
+                                </div>
+                              </dl>
+                            ))}
+                          </div>
                         </div>
                       )}
                     </div>

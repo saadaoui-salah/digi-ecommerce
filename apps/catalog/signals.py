@@ -18,6 +18,41 @@ from .models import ItemType, PackageCode
 from .services import code_joined_stock, code_left_stock
 
 
+def normalize_credential(raw):
+    """Accept both ``email:password`` (admin input) and ``email|password``."""
+    token = raw.strip()
+    if ":" in token and "|" not in token:
+        token = token.replace(":", "|", 1)
+    return token
+
+
+@receiver(pre_save, sender=PackageCode)
+def split_bulk_codes(sender, instance, **kwargs):
+    """Keep the first credential on the row and stash the rest for post_save.
+
+    Staff can paste several space-separated credentials into one admin input.
+    Every extra credential becomes its own PackageCode, so the normal stock
+    signals run for each of them.
+    """
+    tokens = [token for token in str(instance.code or "").split() if token]
+    instance._extra_codes = [
+        normalize_credential(token) for token in tokens[1:]
+    ]
+    if tokens:
+        instance.code = normalize_credential(tokens[0])
+
+
+@receiver(post_save, sender=PackageCode)
+def create_bulk_codes(sender, instance, created, **kwargs):
+    """Create the extra rows of a bulk import, one code per credential."""
+    extra = getattr(instance, "_extra_codes", None)
+    if not extra:
+        return
+    instance._extra_codes = []
+    for code in extra:
+        PackageCode.objects.create(package=instance.package, code=code)
+
+
 @receiver(pre_save, sender=PackageCode)
 def remember_code_before_save(sender, instance, **kwargs):
     """Stash whether the code was already sold.

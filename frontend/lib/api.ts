@@ -6,6 +6,7 @@ export type User = {
   first_name: string;
   last_name: string;
   credit: string;
+  owed: string;
   free_spend: boolean;
   is_approved: boolean;
   is_staff: boolean;
@@ -100,6 +101,7 @@ export type Package = {
   stock: number | null;
   is_available: boolean;
   codes_available: number;
+  requires_info: boolean;
   sort_order: number;
   sales_count: number;
   total_revenue: string;
@@ -166,6 +168,7 @@ export type Order = {
   group: number | null;
   group_name: string;
   price: string;
+  quantity: number;
   sold_price: string | null;
   sold_at: string | null;
   is_sold: boolean;

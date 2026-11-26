@@ -41,7 +41,7 @@ class Command(BaseCommand):
         password_length = options["password_length"]
 
         packages = Package.objects.filter(
-            is_active=True, product__type=ItemType.IMMEDIATE
+            is_active=True, type=ItemType.IMMEDIATE
         ).select_related("product")
 
         created = 0

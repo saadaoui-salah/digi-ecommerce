@@ -189,13 +189,18 @@ def charge(user, order, price):
                 note=f"Order {order.pk}",
                 order=order,
             )
+        shortfall = price - balance
         Credit.objects.create(
             user=account,
             kind=CreditKind.DEBT,
-            amount=price - balance,
+            amount=shortfall,
             order=order,
             note=f"Order {order.pk}",
         )
+        # The balance never goes negative; free-spend purchases accumulate on
+        # the user's own "owed" field instead.
+        account.owed += shortfall
+        account.save(update_fields=["owed"])
     else:
         raise InsufficientCredit("Not enough credit for this purchase.")
 
@@ -205,16 +210,17 @@ def charge(user, order, price):
 
 
 @db_transaction.atomic
-def create_order(*, user, package, product, group=None, code=None, price=None, buyer_info=""):
+def create_order(
+    *, user, package, product, group=None, code=None, price=None,
+    quantity=1, buyer_info=""
+):
     """Create an order, charge the credit and notify the right people.
 
     ``price`` is the amount actually charged — it defaults to the package price
     but checkout passes the promoted price when a promotion is running.
     ``buyer_info`` holds whatever the buyer typed in the pre-order popup.
     """
-    is_instant = (
-        product.type == "immediate" and package.type == "immediate"
-    )
+    is_instant = package.type == "immediate"
     if price is None:
         price = package.price
 
@@ -230,12 +236,13 @@ def create_order(*, user, package, product, group=None, code=None, price=None, b
         package_name=package.name,
         group_name=group.name if group else "",
         price=price,
+        quantity=quantity,
         cost=package.cost,
         buyer_info=buyer_info,
         status=OrderStatus.DELIVERED if is_instant else OrderStatus.PENDING,
     )
 
-    charge(user, order, price)
+    charge(user, order, Decimal(price) * quantity)
 
     if is_instant:
         notify(
