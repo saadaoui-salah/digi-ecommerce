@@ -174,6 +174,10 @@ class MeView(generics.RetrieveUpdateAPIView):
         return self.request.user
 
 
+class NoCodesLeft(Exception):
+    """Raised inside the checkout transaction so claimed codes are rolled back."""
+
+
 class OrderListCreateView(generics.ListCreateAPIView):
     """The customer's own orders. Buying a package creates one.
 
@@ -184,8 +188,12 @@ class OrderListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        queryset = Order.objects.filter(user=self.request.user).select_related(
-            "code", "product", "package", "group"
+        # Every field the serializer reads comes from these joins or this
+        # annotation, so a page of orders costs one query (plus the count).
+        queryset = (
+            Order.objects.filter(user=self.request.user)
+            .select_related("code", "product", "package", "group", "assigned_to")
+            .annotate(reports_count=Count("reports"))
         )
 
         search = self.request.query_params.get("search", "").strip()
@@ -216,9 +224,7 @@ class OrderListCreateView(generics.ListCreateAPIView):
         package = serializer.validated_data["package_obj"]
         product = package.product
 
-        is_instant = (
-            product.type == ItemType.IMMEDIATE and package.type == ItemType.IMMEDIATE
-        )
+        is_instant = package.type == ItemType.IMMEDIATE
 
         # The whole checkout runs in one transaction and locks the customer
         # row, so two orders placed at the same moment cannot both spend the
@@ -226,34 +232,36 @@ class OrderListCreateView(generics.ListCreateAPIView):
         try:
             with db_transaction.atomic():
                 account = User.objects.select_for_update().get(pk=request.user.pk)
+                quantity = serializer.validated_data.get("quantity", 1)
                 price = promotion_price(product, package.price)
                 # A coupon of the customer brings the price down.
                 coupon = coupon_for(account, product)
                 if coupon:
                     price = coupon.price_for(price)
+                total = price * quantity
                 # Fast fail for customers without free spend; charge() repeats
                 # the check under the lock before taking the money.
-                if account.credit < price and not account.free_spend:
+                if account.credit < total and not account.free_spend:
                     raise InsufficientCredit
 
-                code = None
+                codes = []
                 if is_instant:
                     # The conditional UPDATE inside claim_next_code makes sure
                     # only one of two simultaneous customers can get a code.
-                    code = claim_next_code(package, account)
-                    if code is None:
-                        return Response(
-                            {"detail": "No codes are left for this package."},
-                            status=status.HTTP_409_CONFLICT,
-                        )
+                    for _ in range(quantity):
+                        code = claim_next_code(package, account)
+                        if code is None:
+                            raise NoCodesLeft
+                        codes.append(code)
 
                 order = create_order(
                     user=account,
                     package=package,
                     product=product,
                     group=package.group,
-                    code=code,
+                    code=codes[0] if codes else None,
                     price=price,
+                    quantity=quantity,
                     buyer_info=serializer.validated_data.get("buyer_info", ""),
                 )
 
@@ -264,6 +272,11 @@ class OrderListCreateView(generics.ListCreateAPIView):
             return Response(
                 {"detail": "Not enough credit for this purchase."},
                 status=status.HTTP_400_BAD_REQUEST,
+            )
+        except NoCodesLeft:
+            return Response(
+                {"detail": "No codes are left for this package."},
+                status=status.HTTP_409_CONFLICT,
             )
 
         return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)

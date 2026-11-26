@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from django import forms
 from django.contrib import admin
 from django.contrib.admin import helpers
 from django.contrib.admin.views.main import ChangeList
@@ -130,6 +131,7 @@ class PackageInline(TabularInline):
         "type",
         "price",
         "stock",
+        "requires_info",
         "sort_order",
         "is_active",
     )
@@ -226,7 +228,6 @@ class ProductAdmin(ActiveOnlyListMixin, ModelAdmin):
 
     list_display = (
         "name",
-        "type",
         "category",
         "price_from",
         "sales_count",
@@ -235,7 +236,7 @@ class ProductAdmin(ActiveOnlyListMixin, ModelAdmin):
         "is_active",
         "created_at",
     )
-    list_filter = ("is_active", "type", "requires_info", "category")
+    list_filter = ("is_active", "category")
     search_fields = ("name", "short_description")
     autocomplete_fields = ("category",)
     inlines = (ProductImageInline, PackageGroupInline, PackageInline)
@@ -344,8 +345,45 @@ class PackageGroupAdmin(ActiveOnlyListMixin, ModelAdmin):
         return obj.packages_count
 
 
+class PackageCodeInlineForm(forms.ModelForm):
+    """Accept one credential or many space-separated ones in the code input."""
+
+    code = forms.CharField(
+        required=False,
+        widget=forms.Textarea(
+            attrs={
+                "rows": 2,
+                "placeholder": "email:password  email:password  …",
+            }
+        ),
+        help_text=(
+            "One or more credentials separated by spaces, "
+            "each written as email:password. Each one creates its own code."
+        ),
+    )
+
+    class Meta:
+        model = PackageCode
+        fields = ("code", "is_used", "claimed_by", "claimed_at")
+
+    def clean_code(self):
+        value = self.cleaned_data.get("code") or ""
+        tokens = [token for token in value.split() if token]
+        cleaned = []
+        for token in tokens:
+            if ":" in token and "|" not in token:
+                token = token.replace(":", "|", 1)
+            if "|" not in token:
+                raise forms.ValidationError(
+                    "Write each code as email:password."
+                )
+            cleaned.append(token)
+        return " ".join(cleaned)
+
+
 class PackageCodeInline(TabularInline):
     model = PackageCode
+    form = PackageCodeInlineForm
     extra = 1
     fields = ("code", "is_used", "claimed_by", "claimed_at")
     readonly_fields = ("claimed_at",)
@@ -385,7 +423,14 @@ class PackageAdmin(ActiveOnlyListMixin, ModelAdmin):
         (
             None,
             {
-                "fields": ("product", "group", "name", "type", "price"),
+                "fields": (
+                    "product",
+                    "group",
+                    "name",
+                    "type",
+                    "price",
+                    "requires_info",
+                ),
             },
         ),
         (

@@ -253,6 +253,7 @@ class UserSerializer(serializers.ModelSerializer):
             "first_name",
             "last_name",
             "credit",
+            "owed",
             "free_spend",
             "is_approved",
             "is_staff",
@@ -271,6 +272,7 @@ class UserSerializer(serializers.ModelSerializer):
             "id",
             "username",
             "credit",
+            "owed",
             "free_spend",
             "is_approved",
             "is_staff",
@@ -371,6 +373,7 @@ class OrderSerializer(serializers.ModelSerializer):
             "group",
             "group_name",
             "price",
+            "quantity",
             "sold_price",
             "sold_at",
             "is_sold",
@@ -392,7 +395,7 @@ class OrderSerializer(serializers.ModelSerializer):
         return obj.assigned_to.get_full_name() or obj.assigned_to.username
 
     def get_reports_count(self, obj):
-        return obj.reports.count()
+        return getattr(obj, "reports_count", obj.reports.count())
 
 
 class OrderSoldSerializer(serializers.Serializer):
@@ -409,6 +412,7 @@ class OrderSoldSerializer(serializers.Serializer):
 
 class OrderCreateSerializer(serializers.Serializer):
     package = serializers.IntegerField()
+    quantity = serializers.IntegerField(min_value=1, max_value=100, default=1)
     buyer_info = serializers.CharField(
         required=False, allow_blank=True, default="", trim_whitespace=True
     )
@@ -427,7 +431,7 @@ class OrderCreateSerializer(serializers.Serializer):
 
         product = package.product
         buyer_info = attrs.get("buyer_info") or ""
-        if product.requires_info and product.type == "demand" and not buyer_info:
+        if package.requires_info and package.type == "demand" and not buyer_info:
             raise serializers.ValidationError(
                 {"buyer_info": "Please provide the required information."}
             )

@@ -50,6 +50,7 @@ class UserAdmin(BaseUserAdmin, ModelAdmin):
         "username",
         "email",
         "credit",
+        "owed",
         "is_approved",
         "is_sub_admin",
         "is_staff",
@@ -97,7 +98,7 @@ class UserAdmin(BaseUserAdmin, ModelAdmin):
         (
             "Billing",
             {
-                "fields": ("credit", "free_spend"),
+                "fields": ("credit", "owed", "free_spend"),
                 "description": (
                     "Tick the box to let this customer buy with a zero "
                     "balance: the storefront reads Unlimited and the purchase "
@@ -222,6 +223,7 @@ class OrderAdmin(ModelAdmin):
         "package_name",
         "group_name",
         "price",
+        "quantity",
         "sold_price",
         "status",
         "assigned_to",

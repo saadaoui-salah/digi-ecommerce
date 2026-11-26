@@ -122,6 +122,15 @@ class User(AbstractUser):
             "staff can set this."
         ),
     )
+    owed = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        help_text=(
+            "How much this customer owes the store from free-spend purchases. "
+            "Kept apart from credit, which is what they can spend."
+        ),
+    )
     # Counters of the customer's activity. They are kept up to date by the
     # order signals, so the dashboard never has to walk the orders.
     total_revenue = models.DecimalField(
@@ -702,6 +711,10 @@ class Order(models.Model):
         max_digits=10,
         decimal_places=2,
         validators=[MinValueValidator(Decimal("0.00"))],
+    )
+    quantity = models.PositiveIntegerField(
+        default=1,
+        help_text="How many codes this order buys. The price is per code.",
     )
     cost = models.DecimalField(
         max_digits=10,

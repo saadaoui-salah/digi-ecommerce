@@ -76,7 +76,13 @@ class CatalogApiTests(APITestCase):
         cls.demand_product = Product.objects.create(
             category=cls.parent,
             name="Custom Artwork",
+        )
+        Package.objects.create(
+            product=cls.demand_product,
+            name="On-demand artwork",
             type=ItemType.DEMAND,
+            price="20.00",
+            stock=5,
         )
 
     def test_category_browsing(self):
@@ -148,9 +154,9 @@ class CatalogApiTests(APITestCase):
             if item["id"] == self.out_of_stock.id
         )
         self.assertFalse(out_of_stock["is_available"])
-        # A package always follows the type of its product, and an instant
-        # package without codes is not available.
-        self.assertEqual(out_of_stock["type"], ItemType.IMMEDIATE)
+        # The type belongs to the package now; this one is a demand package
+        # with no stock left.
+        self.assertEqual(out_of_stock["type"], ItemType.DEMAND)
         self.assertEqual(out_of_stock["codes_available"], 0)
 
     def test_inactive_category_not_listed(self):
@@ -393,7 +399,6 @@ class StockTests(TestCase):
             category=self.category,
             name="On Demand Pack",
             slug="on-demand-pack",
-            type=ItemType.DEMAND,
         )
         self.demand_package = Package.objects.create(
             product=self.demand_product,
@@ -518,3 +523,33 @@ class CategoryDeletionTests(TestCase):
 
         self.assertIsNone(product.category_id)
         self.assertTrue(Product.objects.filter(pk=product.pk).exists())
+
+
+class BulkPackageCodeTests(TestCase):
+    def test_bulk_codes_create_one_row_each(self):
+        category = Category.objects.create(name="Bulk", slug="bulk")
+        product = Product.objects.create(category=category, name="Bulk", slug="bulk")
+        package = Package.objects.create(product=product, name="Monthly", price="10.00")
+        PackageCode.objects.create(
+            package=package,
+            code="a@example.com:pass1 b@example.com:pass2 c@example.com:pass3",
+        )
+        codes = list(package.codes.order_by("id"))
+        self.assertEqual(len(codes), 3)
+        self.assertEqual([c.email for c in codes], [
+            "a@example.com",
+            "b@example.com",
+            "c@example.com",
+        ])
+        self.assertEqual([c.password for c in codes], ["pass1", "pass2", "pass3"])
+
+    def test_single_code_still_works(self):
+        category = Category.objects.create(name="Single", slug="single")
+        product = Product.objects.create(category=category, name="Single", slug="single")
+        package = Package.objects.create(product=product, name="Monthly", price="10.00")
+        code = PackageCode.objects.create(
+            package=package, code="one@example.com|only",
+        )
+        self.assertEqual(package.codes.count(), 1)
+        self.assertEqual(code.email, "one@example.com")
+

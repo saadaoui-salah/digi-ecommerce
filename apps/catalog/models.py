@@ -102,9 +102,6 @@ class Product(SlugModel):
         help_text="Optional: deleting a category leaves its products in the store.",
     )
     name = models.CharField(max_length=200)
-    type = models.CharField(
-        max_length=20, choices=ItemType.choices, default=ItemType.IMMEDIATE
-    )
     short_description = models.CharField(max_length=255, blank=True)
     description = models.TextField(blank=True)
     image = models.ImageField(upload_to="products/", blank=True)
@@ -114,13 +111,6 @@ class Product(SlugModel):
         help_text="Short product video (mp4/webm).",
     )
     is_active = models.BooleanField(default=True)
-    requires_info = models.BooleanField(
-        default=False,
-        help_text=(
-            "On-demand only: the buyer has to fill in extra information in a "
-            "popup before the order is placed."
-        ),
-    )
     # Counters of what the product sold. The order signals keep them up to
     # date, so the analytics never has to walk the orders.
     sales_count = models.PositiveIntegerField(
@@ -365,6 +355,13 @@ class Package(models.Model):
             "keep it up to date. Demand packages: how many can still be sold."
         ),
     )
+    requires_info = models.BooleanField(
+        default=False,
+        help_text=(
+            "Demand packages need the customer to type extra details before "
+            "checkout."
+        ),
+    )
     is_active = models.BooleanField(default=True)
     sort_order = models.PositiveIntegerField(default=0)
     # Counters of what the package sold. The order signals keep them up to
@@ -434,10 +431,6 @@ class Package(models.Model):
         return Decimal(self.price) - Decimal(self.cost)
 
     def save(self, *args, **kwargs):
-        if self.product_id:
-            # A package follows the type of its product: on-demand products
-            # get on-demand packages, instant products get instant ones.
-            self.type = self.product.type
         super().save(*args, **kwargs)
 
 
@@ -453,7 +446,7 @@ class PackageCode(models.Model):
     )
     code = models.CharField(
         max_length=255,
-        help_text="Credentials in the form email|password.",
+        help_text="Credentials in the form email|password. The admin also accepts several space-separated email:password pairs.",
     )
     is_used = models.BooleanField(default=False)
     claimed_by = models.ForeignKey(

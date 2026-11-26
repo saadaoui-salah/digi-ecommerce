@@ -53,10 +53,26 @@ export function PackagePicker({
                   : "border-border bg-card text-muted-foreground hover:border-foreground/25 hover:text-foreground",
               )}
             >
-              <span className="truncate">{pkg.name}</span>
+              <span className="flex w-full items-center justify-between gap-2">
+                <span className="truncate">{pkg.name}</span>
+                {pkg.type === "demand" && (
+                  <span className="shrink-0 rounded-md bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-300">
+                    In demand
+                  </span>
+                )}
+              </span>
               <span className="text-xs opacity-70">
                 {money(pkg.price_current ?? pkg.price)}
               </span>
+              {(pkg.type === "immediate" ? pkg.codes_available : pkg.stock) !==
+                null && (
+                <span className="text-xs font-medium text-orange-600 dark:text-orange-400">
+                  stock:{" "}
+                  {pkg.type === "immediate"
+                    ? pkg.codes_available
+                    : pkg.stock}
+                </span>
+              )}
             </button>
           );
         })}

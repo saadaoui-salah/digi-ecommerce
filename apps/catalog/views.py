@@ -1,5 +1,5 @@
 from django.db import transaction
-from django.db.models import Count, Exists, Min, OuterRef, Prefetch, Q
+from django.db.models import Count, Exists, Min, OuterRef, Prefetch, Q, Subquery
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -114,7 +114,7 @@ class PackageViewSet(viewsets.ReadOnlyModelViewSet):
         """Claim one unused code of an instant package for the customer."""
         package = self.get_object()
 
-        if package.type != ItemType.IMMEDIATE or package.product.type != ItemType.IMMEDIATE:
+        if package.type != ItemType.IMMEDIATE:
             return Response(
                 {"detail": "This package is delivered on request, not instantly."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -200,6 +200,16 @@ class ProductViewSet(SlugLookupMixin, viewsets.ReadOnlyModelViewSet):
                         & (Q(stock__isnull=True) | Q(stock__gt=0))
                         | (Q(type=ItemType.IMMEDIATE) & Q(codes__is_used=False))
                     )
+                ),
+                package_type=Subquery(
+                    Package.objects.filter(product=OuterRef("pk"))
+                    .order_by("sort_order", "id")
+                    .values("type")[:1]
+                ),
+                package_requires_info=Subquery(
+                    Package.objects.filter(product=OuterRef("pk"))
+                    .order_by("sort_order", "id")
+                    .values("requires_info")[:1]
                 ),
             )
             .order_by("-created_at")

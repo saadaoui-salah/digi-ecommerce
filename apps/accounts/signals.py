@@ -20,7 +20,7 @@ from django.db import transaction
 from django.db.models.signals import post_delete, post_save, pre_save
 from django.dispatch import receiver
 
-from apps.catalog.models import Category, Package, Product
+from apps.catalog.models import Category, ItemType, Package, Product
 from apps.catalog.services import unsold_stock_quantity, unsold_stock_worth
 from apps.core.money import percentage as profit_percentage
 
@@ -31,6 +31,8 @@ from .models import (
     NotificationKind,
     Order,
     OrderStatus,
+    Transaction,
+    TransactionKind,
     User,
 )
 from .services import pay_referral
@@ -65,6 +67,26 @@ def apply_credit_topup(sender, instance, created, **kwargs):
                 f"Your new balance is {balance:.2f} DA."
             ),
         )
+
+
+@receiver(post_save, sender=Transaction)
+def notify_credit_transaction(sender, instance, created, **kwargs):
+    """Tell the customer when staff add credit or issue a refund."""
+    if not created or instance.kind not in (
+        TransactionKind.CREDIT,
+        TransactionKind.REFUND,
+    ):
+        return
+
+    Notification.objects.create(
+        recipient=instance.user,
+        kind=NotificationKind.CREDIT_TOPUP,
+        title="Credit added to your account",
+        body=(
+            f"{Decimal(instance.amount):.2f} DA was added to your balance. "
+            f"Your new balance is {Decimal(instance.user.credit):.2f} DA."
+        ),
+    )
 
 
 @receiver(post_save, sender=User)
@@ -107,8 +129,9 @@ def _pending_for(status, product_id) -> int:
         return 0
     if product_id is None:
         return 1
-    product = Product.objects.filter(pk=product_id).only("type").first()
-    if product is not None and product.type == "immediate":
+    if Package.objects.filter(
+        product_id=product_id, type=ItemType.IMMEDIATE
+    ).exists():
         return 0
     return 1
 
